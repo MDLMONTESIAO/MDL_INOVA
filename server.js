@@ -1,6 +1,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const crypto = require("crypto");
 const { spawn } = require("child_process");
 
 const PORT = Number(process.env.PORT || 3030);
@@ -15,6 +16,12 @@ const FALLBACK_INDEX_PATH = path.join(APP_DATA_DIR, "index.json");
 const SONGS_DIR = path.join(DATA_DIR, "songs");
 const FALLBACK_SONGS_DIR = path.join(APP_DATA_DIR, "songs");
 const IMPORT_SCRIPT = path.join(__dirname, "scripts", "importar-acervo.js");
+const AUTH_PATH = path.join(DATA_DIR, "auth.json");
+const TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
+const AUTH_USERS = {
+  lider: { label: "Líder", role: "leader", defaultPassword: "1234" },
+  musico: { label: "Músico", role: "musician", defaultPassword: "1234" }
+};
 
 let importRunning = false;
 let importQueued = false;
@@ -58,6 +65,121 @@ function readSongRecord(id) {
   return JSON.parse(fs.readFileSync(songPath, "utf8"));
 }
 
+function ensureAuthStore() {
+  fs.mkdirSync(path.dirname(AUTH_PATH), { recursive: true });
+  if (fs.existsSync(AUTH_PATH)) {
+    const store = JSON.parse(fs.readFileSync(AUTH_PATH, "utf8"));
+    let changed = false;
+    store.users = store.users || {};
+    for (const [id, config] of Object.entries(AUTH_USERS)) {
+      if (!store.users[id]) {
+        store.users[id] = createPasswordRecord(config.defaultPassword, config);
+        changed = true;
+      }
+    }
+    if (!store.secret) {
+      store.secret = crypto.randomBytes(32).toString("hex");
+      changed = true;
+    }
+    if (changed) writeAuthStore(store);
+    return store;
+  }
+
+  const store = {
+    secret: crypto.randomBytes(32).toString("hex"),
+    users: Object.fromEntries(
+      Object.entries(AUTH_USERS).map(([id, config]) => [id, createPasswordRecord(config.defaultPassword, config)])
+    )
+  };
+  writeAuthStore(store);
+  return store;
+}
+
+function writeAuthStore(store) {
+  fs.writeFileSync(AUTH_PATH, JSON.stringify(store, null, 2), "utf8");
+}
+
+function createPasswordRecord(password, config) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const iterations = 120000;
+  return {
+    label: config.label,
+    role: config.role,
+    salt,
+    iterations,
+    passwordHash: hashPassword(password, salt, iterations),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function hashPassword(password, salt, iterations) {
+  return crypto.pbkdf2Sync(String(password || ""), salt, iterations, 32, "sha256").toString("hex");
+}
+
+function verifyPassword(password, user) {
+  if (!user?.passwordHash || !user?.salt || !user?.iterations) return false;
+  const hash = hashPassword(password, user.salt, user.iterations);
+  return safeEqual(hash, user.passwordHash);
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""), "hex");
+  const rightBuffer = Buffer.from(String(right || ""), "hex");
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function publicUser(id, user) {
+  return {
+    id,
+    label: user.label,
+    role: user.role
+  };
+}
+
+function signToken(userId, user, secret) {
+  const payload = {
+    sub: userId,
+    role: user.role,
+    label: user.label,
+    exp: Date.now() + TOKEN_MAX_AGE_MS
+  };
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signature = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifyToken(req) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) return null;
+
+  const [encodedPayload, signature] = token.split(".");
+  if (!encodedPayload || !signature) return null;
+
+  const store = ensureAuthStore();
+  const expected = crypto.createHmac("sha256", store.secret).update(encodedPayload).digest("base64url");
+  if (!safeTokenEqual(signature, expected)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    const user = store.users?.[payload.sub];
+    if (!user || payload.exp < Date.now()) return null;
+    return { userId: payload.sub, user, store };
+  } catch {
+    return null;
+  }
+}
+
+function safeTokenEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""));
+  const rightBuffer = Buffer.from(String(right || ""));
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function base64UrlEncode(value) {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
 function parseJsonBody(req, maxBytes = 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -85,6 +207,8 @@ function parseJsonBody(req, maxBytes = 1024 * 1024) {
 
 function safeStaticPath(urlPath) {
   const decoded = decodeURIComponent(urlPath.split("?")[0]);
+  const publicPath = decoded.replace(/^\/+/, "");
+  if (/^data(?:\/.*)?\/auth\.json$/i.test(publicPath)) return null;
   const relativePath = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
   const fullPath = path.normalize(path.join(PUBLIC_DIR, relativePath));
   return fullPath.startsWith(PUBLIC_DIR) ? fullPath : null;
@@ -92,6 +216,54 @@ function safeStaticPath(urlPath) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+
+  if (url.pathname === "/api/auth/session" && req.method === "GET") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+    return sendJson(res, 200, { ok: true, user: publicUser(session.userId, session.user) });
+  }
+
+  if (url.pathname === "/api/auth/login" && req.method === "POST") {
+    try {
+      const body = await parseJsonBody(req);
+      const userId = normalizeUserId(body.userId);
+      const store = ensureAuthStore();
+      const user = store.users?.[userId];
+      if (!user || !verifyPassword(body.password, user)) {
+        return sendJson(res, 401, { ok: false, error: "invalid-login" });
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        user: publicUser(userId, user),
+        token: signToken(userId, user, store.secret)
+      });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
+
+  if (url.pathname === "/api/auth/change-password" && req.method === "POST") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+
+    try {
+      const body = await parseJsonBody(req);
+      const newPassword = String(body.newPassword || "");
+      if (newPassword.length < 4) {
+        return sendJson(res, 400, { ok: false, error: "password-too-short" });
+      }
+      if (!verifyPassword(body.currentPassword, session.user)) {
+        return sendJson(res, 403, { ok: false, error: "invalid-current-password" });
+      }
+
+      session.store.users[session.userId] = createPasswordRecord(newPassword, AUTH_USERS[session.userId] || session.user);
+      writeAuthStore(session.store);
+      return sendJson(res, 200, { ok: true, user: publicUser(session.userId, session.store.users[session.userId]) });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.message });
+    }
+  }
 
   if (req.url === "/api/status") {
     const statusPath = fs.existsSync(INDEX_PATH) ? INDEX_PATH : FALLBACK_INDEX_PATH;
@@ -217,6 +389,11 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function normalizeUserId(value) {
+  const normalized = normalizeText(value).replace(/[^a-z0-9_-]/g, "");
+  return normalized === "musico" ? "musico" : normalized === "lider" ? "lider" : "";
 }
 
 function runImport(reason) {

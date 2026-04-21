@@ -1,5 +1,5 @@
-const CACHE_NAME = "acervo-mdl-inova-shell-v2";
-const API_CACHE = "acervo-mdl-inova-api-v2";
+const CACHE_NAME = "acervo-mdl-inova-shell-v3";
+const API_CACHE = "acervo-mdl-inova-api-v3";
 
 const APP_SHELL = [
   "/",

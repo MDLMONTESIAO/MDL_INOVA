@@ -20,7 +20,30 @@
   </script>
 </head>
 <body>
-  <div class="app-shell">
+  <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+    <form class="login-card" id="loginForm">
+      <img src="/assets/logo-inova.jpg" alt="MDL Inova" class="login-logo">
+      <div class="login-heading">
+        <span>Acervo Musical</span>
+        <h1 id="loginTitle">MDL Inova</h1>
+      </div>
+
+      <div class="login-users" role="group" aria-label="Perfil de acesso">
+        <button class="active" type="button" data-action="select-login-user" data-user-id="lider" aria-pressed="true">Líder</button>
+        <button type="button" data-action="select-login-user" data-user-id="musico" aria-pressed="false">Músico</button>
+      </div>
+
+      <label class="login-password" for="loginPassword">
+        <span>Senha</span>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </label>
+
+      <button class="login-submit" type="submit">Entrar</button>
+      <p class="login-status" id="loginStatus" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <div class="app-shell" id="appShell" hidden>
     <header class="cover">
       <div class="brand">
         <img src="/assets/logo-inova.jpg" alt="MDL Inova" class="brand-logo">
@@ -38,6 +61,9 @@
       <div class="cover-actions" aria-label="Acoes do aplicativo">
         <button class="cover-action theme-action" type="button" data-action="toggle-theme" id="themeToggleButton" aria-label="Ativar modo noturno" aria-pressed="false">
           <span class="theme-icon" id="themeToggleIcon" aria-hidden="true">&#9790;</span>
+        </button>
+        <button class="cover-action account-action" type="button" data-action="open-account" id="accountButton" aria-label="Conta">
+          <span id="accountInitial" aria-hidden="true">L</span>
         </button>
       </div>
 
@@ -63,9 +89,9 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l2 4 4 .5-3 3 .8 4.5-3.8-2.2L8.2 17l.8-4.5-3-3 4-.5z"></path></svg>
         <span>Favoritas</span>
       </button>
-      <button class="quick-card play-card" type="button" data-view="play" title="Play ensaio">
+      <button class="quick-card play-card" type="button" data-view="play" title="Play do ensaio">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
-        <span>Play ensaio</span>
+        <span>Play do ensaio</span>
         <b id="playCount">0</b>
       </button>
       <button class="quick-card" type="button" data-view="artistas" title="Artistas">
@@ -118,7 +144,7 @@
           </div>
 
           <div class="worship-title">
-            <h2>Culto de Domingo</h2>
+            <h2>Play do ensaio</h2>
             <p><strong id="worshipCount">0</strong> músicas<br><span>18:30</span></p>
           </div>
 
@@ -277,6 +303,37 @@
 
     <footer class="screen-footer">Desenvolvido por Odiman Ramalho 21970955634</footer>
   </div>
+
+  <section class="account-modal" id="accountModal" aria-labelledby="accountTitle" hidden>
+    <button class="account-backdrop" type="button" data-action="close-account" aria-label="Fechar conta"></button>
+    <form class="account-card" id="accountForm">
+      <div class="account-head">
+        <div>
+          <span id="accountRole">Perfil</span>
+          <h2 id="accountTitle">Minha conta</h2>
+          <p id="accountName">Usuário</p>
+        </div>
+        <button type="button" data-action="close-account" aria-label="Fechar">×</button>
+      </div>
+
+      <label>
+        <span>Senha atual</span>
+        <input id="currentPassword" type="password" autocomplete="current-password" required>
+      </label>
+      <label>
+        <span>Nova senha</span>
+        <input id="newPassword" type="password" autocomplete="new-password" minlength="4" required>
+      </label>
+      <label>
+        <span>Confirmar nova senha</span>
+        <input id="confirmPassword" type="password" autocomplete="new-password" minlength="4" required>
+      </label>
+
+      <button class="account-save" type="submit">Alterar senha</button>
+      <button class="account-logout" type="button" data-action="logout">Sair</button>
+      <p class="account-status" id="accountStatus" aria-live="polite"></p>
+    </form>
+  </section>
 
   <script src="/app.js"></script>
 </body>

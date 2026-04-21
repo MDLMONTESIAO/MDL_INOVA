@@ -77,6 +77,10 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled {
+  cursor: default;
+}
+
 svg {
   fill: none;
   stroke: currentColor;
@@ -92,6 +96,121 @@ svg {
   margin: 0 auto;
   background: var(--paper);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .04);
+}
+
+.app-shell[hidden],
+.login-screen[hidden],
+.account-modal[hidden] {
+  display: none;
+}
+
+.login-screen {
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .74)),
+    var(--black);
+  color: var(--white);
+  display: grid;
+  place-items: center;
+}
+
+.login-card {
+  width: min(100%, 380px);
+  display: grid;
+  gap: 16px;
+  justify-items: stretch;
+}
+
+.login-logo {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 2px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--white);
+  border: 1px solid rgba(255, 255, 255, .24);
+}
+
+.login-heading {
+  text-align: center;
+}
+
+.login-heading span,
+.login-password span,
+.account-card label span,
+.account-head span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.login-heading span {
+  color: rgba(255, 255, 255, .72);
+}
+
+.login-users {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.login-users button,
+.login-submit {
+  min-height: 46px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.login-users button {
+  background: rgba(255, 255, 255, .13);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+
+.login-users button.active,
+.login-submit {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #17120c;
+}
+
+.login-password {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, .76);
+}
+
+.login-password input,
+.account-card input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  outline: 0;
+  background: var(--paper-2);
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.login-password input:focus,
+.account-card input:focus {
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.login-status,
+.account-status {
+  min-height: 18px;
+  color: var(--gold-2);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 850;
+  text-align: center;
 }
 
 .cover {
@@ -182,6 +301,7 @@ h1 {
 .cover-actions {
   display: flex;
   justify-content: center;
+  gap: 10px;
 }
 
 .cover-action {
@@ -206,6 +326,21 @@ h1 {
 .cover-action[disabled] {
   cursor: default;
   opacity: .78;
+}
+
+.account-action {
+  font-size: 14px;
+}
+
+.account-action span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .2);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .install-prompt {
@@ -283,6 +418,90 @@ h1 {
   font-size: 20px;
   line-height: 1;
   font-weight: 900;
+}
+
+.account-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+}
+
+.account-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .56);
+}
+
+.account-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.account-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: start;
+  gap: 10px;
+}
+
+.account-head h2 {
+  margin-top: 3px;
+  font-size: 22px;
+  line-height: 1.05;
+}
+
+.account-head p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.account-head button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--soft-button);
+  color: var(--soft-button-text);
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.account-card label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+}
+
+.account-save,
+.account-logout {
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.account-save {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #17120c;
+}
+
+.account-logout {
+  background: var(--soft-button);
+  color: var(--soft-button-text);
 }
 
 .developer-signature,
@@ -528,6 +747,12 @@ h1 {
 .mini-action[disabled] {
   cursor: progress;
   opacity: .74;
+}
+
+.mini-action.locked[disabled] {
+  cursor: default;
+  background: var(--soft-button);
+  color: var(--muted);
 }
 
 .artist-download.active {
@@ -1268,6 +1493,11 @@ body.screen-admin .main-area {
   color: var(--white);
   font-size: 12px;
   font-weight: 950;
+}
+
+.worship-actions button:disabled {
+  opacity: .48;
+  cursor: default;
 }
 
 .worship-list {

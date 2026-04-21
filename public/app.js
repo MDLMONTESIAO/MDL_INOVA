@@ -119,6 +119,10 @@ const TUNER_MIN_FREQUENCY = 65;
 const TUNER_MAX_FREQUENCY = 1200;
 const TUNER_SILENCE_RMS = 0.012;
 const TUNER_UPDATE_INTERVAL_MS = 80;
+const LOGIN_USERS = {
+  lider: { label: "Líder", role: "leader", initial: "L" },
+  musico: { label: "Músico", role: "musician", initial: "M" }
+};
 let deferredInstallPrompt = null;
 let installPromptAutoHideTimer = null;
 
@@ -128,6 +132,9 @@ const state = {
   currentView: "acervo",
   currentSongId: null,
   previousView: "acervo",
+  appStarted: false,
+  auth: readStoredAuth(),
+  selectedLoginUser: localStorage.getItem("mdl.lastLoginUser") || "lider",
   currentSheetHtml: "",
   transposeOffset: 0,
   baseKey: null,
@@ -194,6 +201,11 @@ Pronta para abrir`
 };
 
 const dom = {
+  loginScreen: document.getElementById("loginScreen"),
+  loginForm: document.getElementById("loginForm"),
+  loginPassword: document.getElementById("loginPassword"),
+  loginStatus: document.getElementById("loginStatus"),
+  appShell: document.getElementById("appShell"),
   search: document.getElementById("searchInput"),
   libraryStats: document.getElementById("libraryStats"),
   favoriteStats: document.getElementById("favoriteStats"),
@@ -228,6 +240,16 @@ const dom = {
   chordGuideHint: document.getElementById("chordGuideHint"),
   themeToggleButton: document.getElementById("themeToggleButton"),
   themeToggleIcon: document.getElementById("themeToggleIcon"),
+  accountButton: document.getElementById("accountButton"),
+  accountInitial: document.getElementById("accountInitial"),
+  accountModal: document.getElementById("accountModal"),
+  accountForm: document.getElementById("accountForm"),
+  accountRole: document.getElementById("accountRole"),
+  accountName: document.getElementById("accountName"),
+  accountStatus: document.getElementById("accountStatus"),
+  currentPassword: document.getElementById("currentPassword"),
+  newPassword: document.getElementById("newPassword"),
+  confirmPassword: document.getElementById("confirmPassword"),
   installPrompt: document.getElementById("installPrompt"),
   installPromptText: document.getElementById("installPromptText"),
   installPromptButton: document.getElementById("installPromptButton"),
@@ -242,12 +264,32 @@ init();
 async function init() {
   registerServiceWorker();
   initTheme();
+  bindEvents();
+  syncLoginSelection();
+  syncAuthUi();
+
+  if (!(await restoreSession())) {
+    showLogin();
+    return;
+  }
+
+  await startAuthenticatedApp();
+}
+
+async function startAuthenticatedApp() {
+  if (state.appStarted) {
+    showAuthenticatedApp();
+    renderAll();
+    return;
+  }
+
+  state.appStarted = true;
+  showAuthenticatedApp();
   initInstallPrompt();
   savePlay();
   await loadSongs();
   await refreshOfflineSongIds();
   applyPreviewState();
-  bindEvents();
   applyReaderPreferences();
   filterSongs();
   renderAll();
@@ -264,6 +306,205 @@ async function init() {
   }
 
   setInterval(autoRefreshLibrary, 30000);
+}
+
+function readStoredAuth() {
+  try {
+    return JSON.parse(localStorage.getItem("mdl.auth") || "null");
+  } catch {
+    localStorage.removeItem("mdl.auth");
+    return null;
+  }
+}
+
+async function restoreSession() {
+  if (!state.auth?.token) return false;
+
+  try {
+    const response = await fetch("/api/auth/session", {
+      headers: authHeaders()
+    });
+    if (!response.ok) throw new Error("session-expired");
+    const data = await response.json();
+    state.auth = { token: state.auth.token, user: data.user };
+    localStorage.setItem("mdl.auth", JSON.stringify(state.auth));
+    syncAuthUi();
+    return true;
+  } catch {
+    state.auth = null;
+    localStorage.removeItem("mdl.auth");
+    syncAuthUi();
+    return false;
+  }
+}
+
+function authHeaders(extra = {}) {
+  return {
+    ...extra,
+    ...(state.auth?.token ? { Authorization: `Bearer ${state.auth.token}` } : {})
+  };
+}
+
+function showLogin(message = "") {
+  if (dom.loginScreen) dom.loginScreen.hidden = false;
+  if (dom.appShell) dom.appShell.hidden = true;
+  if (dom.loginStatus) dom.loginStatus.textContent = message;
+  setTimeout(() => dom.loginPassword?.focus(), 50);
+}
+
+function showAuthenticatedApp() {
+  if (dom.loginScreen) dom.loginScreen.hidden = true;
+  if (dom.appShell) dom.appShell.hidden = false;
+  syncAuthUi();
+}
+
+function selectLoginUser(userId) {
+  if (!LOGIN_USERS[userId]) return;
+  state.selectedLoginUser = userId;
+  localStorage.setItem("mdl.lastLoginUser", userId);
+  syncLoginSelection();
+  if (dom.loginStatus) dom.loginStatus.textContent = "";
+  dom.loginPassword?.focus();
+}
+
+function syncLoginSelection() {
+  if (!LOGIN_USERS[state.selectedLoginUser]) state.selectedLoginUser = "lider";
+  document.querySelectorAll("[data-action='select-login-user']").forEach((button) => {
+    const selected = button.dataset.userId === state.selectedLoginUser;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+}
+
+async function loginSelectedUser() {
+  const password = dom.loginPassword?.value || "";
+  if (!password) {
+    if (dom.loginStatus) dom.loginStatus.textContent = "Digite a senha.";
+    return;
+  }
+
+  if (dom.loginStatus) dom.loginStatus.textContent = "Entrando...";
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: state.selectedLoginUser,
+        password
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.token) throw new Error(data.error || "invalid-login");
+
+    state.auth = { token: data.token, user: data.user };
+    localStorage.setItem("mdl.auth", JSON.stringify(state.auth));
+    localStorage.setItem("mdl.lastLoginUser", state.selectedLoginUser);
+    if (dom.loginPassword) dom.loginPassword.value = "";
+    await startAuthenticatedApp();
+  } catch {
+    if (dom.loginStatus) dom.loginStatus.textContent = "Usuário ou senha inválidos.";
+  }
+}
+
+function syncAuthUi() {
+  const user = state.auth?.user;
+  const config = user ? LOGIN_USERS[user.id] : null;
+  document.body.classList.toggle("role-leader", isLeader());
+  document.body.classList.toggle("role-musician", user?.role === "musician");
+
+  if (dom.accountInitial) dom.accountInitial.textContent = config?.initial || "U";
+  if (dom.accountButton && user) {
+    dom.accountButton.title = `Conta: ${user.label}`;
+    dom.accountButton.setAttribute("aria-label", `Conta: ${user.label}`);
+  }
+  if (dom.accountRole) dom.accountRole.textContent = user?.label || "Perfil";
+  if (dom.accountName) dom.accountName.textContent = isLeader()
+    ? "Pode editar o Play do ensaio"
+    : "Pode visualizar o Play do ensaio";
+
+  renderPermissionState();
+}
+
+function openAccountModal() {
+  if (!state.auth?.user || !dom.accountModal) return;
+  dom.accountModal.hidden = false;
+  if (dom.accountStatus) dom.accountStatus.textContent = "";
+  dom.currentPassword?.focus();
+}
+
+function closeAccountModal() {
+  if (!dom.accountModal) return;
+  dom.accountModal.hidden = true;
+  if (dom.accountForm) dom.accountForm.reset();
+  if (dom.accountStatus) dom.accountStatus.textContent = "";
+}
+
+async function changePassword() {
+  const currentPassword = dom.currentPassword?.value || "";
+  const newPassword = dom.newPassword?.value || "";
+  const confirmPassword = dom.confirmPassword?.value || "";
+
+  if (newPassword.length < 4) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "A nova senha precisa ter pelo menos 4 caracteres.";
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "A confirmação não confere.";
+    return;
+  }
+
+  if (dom.accountStatus) dom.accountStatus.textContent = "Alterando senha...";
+  try {
+    const response = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "change-failed");
+    if (dom.accountForm) dom.accountForm.reset();
+    if (dom.accountStatus) dom.accountStatus.textContent = "Senha alterada.";
+    toast("Senha alterada");
+  } catch {
+    if (dom.accountStatus) dom.accountStatus.textContent = "Senha atual inválida.";
+  }
+}
+
+function logout() {
+  stopAutoScroll();
+  stopTuner(true);
+  closeChordGuide(true);
+  closeAccountModal();
+  state.auth = null;
+  localStorage.removeItem("mdl.auth");
+  syncAuthUi();
+  showLogin("Sessão encerrada.");
+}
+
+function isLeader() {
+  return state.auth?.user?.role === "leader";
+}
+
+function requireLeader() {
+  if (isLeader()) return true;
+  toast("Apenas o líder pode editar o Play do ensaio");
+  return false;
+}
+
+function renderPermissionState() {
+  if (!state.appStarted) return;
+  if (!isLeader()) state.playEditing = false;
+  document.querySelectorAll('[data-action="add-play"], [data-action="add-current-play"]').forEach((button) => {
+    const locked = !isLeader();
+    button.disabled = locked;
+    button.classList.toggle("locked", locked);
+    button.title = locked ? "Apenas o líder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
+    button.setAttribute("aria-label", button.title);
+  });
+  if (dom.editPlayButton) {
+    dom.editPlayButton.disabled = !isLeader();
+    dom.editPlayButton.title = isLeader() ? "Editar Play do ensaio" : "Apenas o líder pode editar";
+  }
 }
 
 function applyPreviewState() {
@@ -300,7 +541,15 @@ function bindEvents() {
     if (document.hidden) stopTuner();
   });
   window.addEventListener("pagehide", () => stopTuner());
-  dom.search.addEventListener("input", () => {
+  dom.loginForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    loginSelectedUser();
+  });
+  dom.accountForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    changePassword();
+  });
+  dom.search?.addEventListener("input", () => {
     filterSongs();
     renderCatalog();
     if (state.currentView !== "acervo") showView("acervo");
@@ -332,21 +581,25 @@ function handleClick(event) {
     event.preventDefault();
     event.stopPropagation();
 
+    if (action === "select-login-user") return selectLoginUser(button.dataset.userId);
+    if (action === "open-account") return openAccountModal();
+    if (action === "close-account") return closeAccountModal();
+    if (action === "logout") return logout();
     if (action === "open") return openSong(id);
-    if (action === "add-play") return addToPlay(id);
-    if (action === "remove-play") return removeFromPlay(id);
+    if (action === "add-play") return requireLeader() && addToPlay(id);
+    if (action === "remove-play") return requireLeader() && removeFromPlay(id);
     if (action === "favorite") return toggleFavorite(id);
     if (action === "download-artist") return downloadArtistForOffline(artist);
     if (action === "toggle-theme") return toggleTheme();
     if (action === "install-app") return installApp();
     if (action === "dismiss-install") return hideInstallPrompt();
-    if (action === "clear-play") return clearPlay();
+    if (action === "clear-play") return requireLeader() && clearPlay();
     if (action === "refresh") return refreshLibrary();
     if (action === "back") return showView(state.previousView || "acervo");
     if (action === "back-play") return showView(state.previousView && state.previousView !== "play" ? state.previousView : "acervo");
     if (action === "go-home") return showView("acervo");
     if (action === "favorite-current") return toggleFavorite(state.currentSongId);
-    if (action === "add-current-play") return addToPlay(state.currentSongId, currentKeyLabel());
+    if (action === "add-current-play") return requireLeader() && addToPlay(state.currentSongId, currentKeyLabel());
     if (action === "font-down") return setReaderFont(state.readerFont - 1);
     if (action === "font-up") return setReaderFont(state.readerFont + 1);
     if (action === "toggle-singer-mode") return toggleSingerMode();
@@ -358,7 +611,7 @@ function handleClick(event) {
     if (action === "toggle-autoscroll") return toggleAutoScroll();
     if (action === "start-service") return startService();
     if (action === "share-play") return sharePlay();
-    if (action === "toggle-edit-play") return togglePlayEditing();
+    if (action === "toggle-edit-play") return requireLeader() && togglePlayEditing();
     if (action === "admin-refresh") return adminRefresh();
     if (action === "close-chord-guide") return closeChordGuide();
   }
@@ -375,6 +628,11 @@ function handleKeyDown(event) {
 
   if (event.key === "Escape" && state.chordGuideOpen) {
     closeChordGuide();
+    return;
+  }
+
+  if (event.key === "Escape" && dom.accountModal && !dom.accountModal.hidden) {
+    closeAccountModal();
   }
 }
 
@@ -403,6 +661,7 @@ function renderCatalog() {
     ? state.filtered.map(renderSongCard).join("")
     : emptyState("Nenhuma música encontrada.");
   syncFavoriteControls();
+  renderPermissionState();
 }
 
 function renderFavorites() {
@@ -411,6 +670,7 @@ function renderFavorites() {
     ? songs.map(renderSongCard).join("")
     : emptyState("Suas favoritas aparecem aqui.");
   syncFavoriteControls();
+  renderPermissionState();
 }
 
 function renderPlay() {
@@ -418,14 +678,19 @@ function renderPlay() {
     .map((entry) => ({ entry, song: findSong(entry.id) }))
     .filter(({ song }) => Boolean(song));
 
+  const playEmptyText = isLeader()
+    ? "Adicione músicas pelo botão + no acervo. Elas aparecem aqui para o ensaio."
+    : "O Play do ensaio aparecerá aqui quando o líder adicionar músicas.";
+
   dom.playList.innerHTML = entries.length
     ? entries.map(({ entry, song }, index) => renderWorshipSong(entry, song, index)).join("")
-    : emptyState("Adicione músicas pelo botão + no acervo. Elas aparecem aqui para o culto.");
+    : emptyState(playEmptyText);
 
   if (dom.editPlayButton) {
     dom.editPlayButton.textContent = state.playEditing ? "Concluir" : "Editar";
   }
   updateStats();
+  renderPermissionState();
 }
 
 function renderArtists() {
@@ -501,6 +766,8 @@ function renderSongCard(song) {
   const favoriteTitle = isFavorite ? "Remover dos favoritos" : "Favoritar";
   const favoriteGlyph = isFavorite ? "★" : "☆";
   const songMeta = getSongMetaLabel(song);
+  const playLocked = !isLeader();
+  const playTitle = playLocked ? "Apenas o líder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
   return `
     <article class="song-card">
       <button class="song-main" type="button" data-action="open" data-id="${escapeAttr(song.id)}">
@@ -509,7 +776,7 @@ function renderSongCard(song) {
       </button>
       <div class="song-actions">
         <button class="${favoriteClass}" type="button" data-action="favorite" data-id="${escapeAttr(song.id)}" title="${favoriteTitle}" aria-label="${favoriteTitle}" aria-pressed="${isFavorite}">${favoriteGlyph}</button>
-        <button class="mini-action primary" type="button" data-action="add-play" data-id="${escapeAttr(song.id)}" title="Adicionar ao culto">
+        <button class="mini-action primary${playLocked ? " locked" : ""}" type="button" data-action="add-play" data-id="${escapeAttr(song.id)}" title="${escapeAttr(playTitle)}" aria-label="${escapeAttr(playTitle)}"${playLocked ? " disabled" : ""}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
         </button>
       </div>
@@ -531,7 +798,7 @@ function getVisibleCollection(collection) {
 function renderWorshipSong(entry, song, index) {
   const key = entry.key || song.key || "Tom";
   const offlineBadge = state.offlineSongs.has(song.id) ? `<span class="offline-badge">offline</span>` : "";
-  const removeButton = state.playEditing
+  const removeButton = state.playEditing && isLeader()
     ? `<button class="worship-remove" type="button" data-action="remove-play" data-id="${escapeAttr(song.id)}" title="Remover cifra">×</button>`
     : "";
 
@@ -633,6 +900,7 @@ function closeChordGuide(preserveBase = false) {
 }
 
 function addToPlay(id, selectedKey = null) {
+  if (!isLeader()) return requireLeader();
   if (!id) return;
   const song = findSong(id);
   if (!song) return;
@@ -646,17 +914,19 @@ function addToPlay(id, selectedKey = null) {
 
   savePlay();
   renderPlay();
-  toast("Adicionada ao Culto de Domingo");
+  toast("Adicionada ao Play do ensaio");
   downloadSongForOffline(id);
 }
 
 function removeFromPlay(id) {
+  if (!isLeader()) return requireLeader();
   state.play = state.play.filter((entry) => entry.id !== id);
   savePlay();
   renderPlay();
 }
 
 function clearPlay() {
+  if (!isLeader()) return requireLeader();
   state.play = [];
   savePlay();
   renderPlay();
@@ -1020,9 +1290,9 @@ async function sharePlay() {
 
   if (!songs.length) return toast("Nenhuma música no culto");
 
-  const text = `Culto de Domingo - MDL Inova\n\n${songs.join("\n")}`;
+  const text = `Play do ensaio - MDL Inova\n\n${songs.join("\n")}`;
   if (navigator.share) {
-    await navigator.share({ title: "Culto de Domingo", text });
+    await navigator.share({ title: "Play do ensaio", text });
   } else if (navigator.clipboard) {
     await navigator.clipboard.writeText(text);
     toast("Lista copiada");
@@ -1032,6 +1302,7 @@ async function sharePlay() {
 }
 
 function togglePlayEditing() {
+  if (!isLeader()) return requireLeader();
   state.playEditing = !state.playEditing;
   renderPlay();
 }
