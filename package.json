@@ -1,7 +1,7 @@
 {
-  "name": "cifras-mdl",
+  "name": "acervo-mdl-inova",
   "version": "0.1.0",
-  "description": "Acervo Musical MDL Monte Sião",
+  "description": "Acervo Musical MDL Inova",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,8 +15,8 @@
     "cifras",
     "musica",
     "mdl",
-    "monte-siao"
+    "inova"
   ],
-  "author": "MDL Monte Sião",
+  "author": "MDL Inova",
   "license": "MIT"
 }

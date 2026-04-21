@@ -45,7 +45,7 @@ function main() {
 
   const artists = Array.from(new Set(songs.map((song) => song.artist))).sort((a, b) => a.localeCompare(b, "pt-BR"));
   const database = {
-    name: "Acervo Musical MDL Monte Sião",
+    name: "Acervo Musical MDL Inova",
     generatedAt: new Date().toISOString(),
     totalSongs: songs.length,
     totalArtists: artists.length,

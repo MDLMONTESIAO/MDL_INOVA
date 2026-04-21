@@ -770,7 +770,7 @@ async function sharePlay() {
 
   if (!songs.length) return toast("Nenhuma música no culto");
 
-  const text = `Culto de Domingo - MDL Monte Sião\n\n${songs.join("\n")}`;
+  const text = `Culto de Domingo - MDL Inova\n\n${songs.join("\n")}`;
   if (navigator.share) {
     await navigator.share({ title: "Culto de Domingo", text });
   } else if (navigator.clipboard) {

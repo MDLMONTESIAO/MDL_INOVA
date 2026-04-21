@@ -1,5 +1,5 @@
-const CACHE_NAME = "cifras-mdl-shell-v7";
-const API_CACHE = "cifras-mdl-api-v7";
+const CACHE_NAME = "acervo-mdl-inova-shell-v1";
+const API_CACHE = "acervo-mdl-inova-api-v1";
 
 const APP_SHELL = [
   "/",
@@ -7,7 +7,7 @@ const APP_SHELL = [
   "/styles.css",
   "/app.js",
   "/manifest.webmanifest",
-  "/assets/logo-monte-siao.jpg"
+  "/assets/logo-inova.jpg"
 ];
 
 self.addEventListener("install", (event) => {

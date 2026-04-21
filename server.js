@@ -201,7 +201,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Acervo Musical MDL Monte Sião em http://localhost:${PORT}`);
+  console.log(`Acervo Musical MDL Inova em http://localhost:${PORT}`);
   scheduleImport("inicio");
   watchCatalogFolders();
 });

@@ -1,6 +1,6 @@
-# Acervo Musical MDL Monte Siao
+# Acervo Musical MDL Inova
 
-Sistema separado para leitura de musicas cifradas da MDL Monte Siao.
+Sistema separado para leitura de musicas cifradas da MDL Inova.
 
 ## Como iniciar
 
@@ -21,7 +21,7 @@ http://localhost:3030
 Coloque novas pastas e arquivos dentro de:
 
 ```text
-C:\Users\Pixel Midia 3D\Cifras MDL\acervo\cifras_multi
+acervo\cifras_multi
 ```
 
 Formato recomendado:
@@ -64,13 +64,13 @@ A lista fica salva no navegador daquele aparelho e permite remover musicas adici
 O importador gera uma base do acervo em:
 
 ```text
-C:\Users\Pixel Midia 3D\Cifras MDL\data\acervo-db.json
+data\acervo-db.json
 ```
 
 E salva cada cifra indexada em:
 
 ```text
-C:\Users\Pixel Midia 3D\Cifras MDL\data\songs
+data\songs
 ```
 
 O servidor usa essa base para entregar o catalogo online pelas APIs:
@@ -104,7 +104,7 @@ Resumo do fluxo:
 3. Se preferir criar manualmente em `New > Web Service`, use:
 
 ```text
-Name: acervo-musical-mdl
+Name: acervo-musical-mdl-inova
 Language: Node
 Branch: main
 Root Directory: (deixe vazio)
