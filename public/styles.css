@@ -13,6 +13,38 @@
   --text: #15120f;
   --white: #ffffff;
   --shadow: 0 18px 42px rgba(0, 0, 0, .2);
+  --desktop-bg: #e9dfcf;
+  --soft-button: #eee4d3;
+  --soft-button-text: #3a3127;
+  --empty-line: #cfc1ab;
+  --focus-ring: rgba(239, 211, 147, .72);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --black: #05070b;
+  --coal: #0f1624;
+  --panel: #0c1220;
+  --paper: #090f1a;
+  --paper-2: #121b2b;
+  --line: #263449;
+  --muted: #a6b1c3;
+  --gold: #e4b95f;
+  --gold-2: #f4d990;
+  --sage: #8fb08f;
+  --wine: #ef8da2;
+  --text: #f8efe2;
+  --white: #ffffff;
+  --shadow: 0 18px 48px rgba(0, 0, 0, .42);
+  --desktop-bg: #05070b;
+  --soft-button: #1a2638;
+  --soft-button-text: #f8efe2;
+  --empty-line: #35445d;
+  --focus-ring: rgba(244, 217, 144, .86);
 }
 
 * {
@@ -31,6 +63,7 @@ body {
   background: var(--paper);
   color: var(--text);
   overflow-x: hidden;
+  transition: background .22s ease, color .22s ease;
 }
 
 button,
@@ -146,6 +179,121 @@ h1 {
   opacity: 1;
 }
 
+.cover-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.cover-action {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .13);
+  border: 1px solid rgba(255, 255, 255, .18);
+  color: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.theme-icon {
+  line-height: 1;
+}
+
+.cover-action[disabled] {
+  cursor: default;
+  opacity: .78;
+}
+
+.install-prompt {
+  margin: -6px 12px 12px;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto 34px;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.install-prompt[hidden] {
+  display: none;
+}
+
+.install-prompt.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.install-prompt-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--white);
+}
+
+.install-prompt-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.install-prompt-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.install-prompt-copy span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.install-prompt-action {
+  min-height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #17120c;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.install-prompt-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--soft-button);
+  color: var(--soft-button-text);
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.developer-signature,
+.screen-footer {
+  color: rgba(255, 255, 255, .68);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 800;
+  text-align: center;
+}
+
 .quick-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -221,6 +369,12 @@ h1 {
   min-height: calc(100vh - 362px);
   background: var(--paper);
   padding-bottom: 18px;
+}
+
+.screen-footer {
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid rgba(255, 255, 255, .08);
 }
 
 .view {
@@ -342,8 +496,8 @@ h1 {
   border-radius: 8px;
   display: grid;
   place-items: center;
-  background: #eee4d3;
-  color: #3a3127;
+  background: var(--soft-button);
+  color: var(--soft-button-text);
   border: 1px solid rgba(0, 0, 0, .04);
   font-size: 15px;
   font-weight: 950;
@@ -371,7 +525,7 @@ h1 {
 
 .empty-state {
   min-height: 120px;
-  border: 1px dashed #cfc1ab;
+  border: 1px dashed var(--empty-line);
   border-radius: 8px;
   display: grid;
   place-items: center;
@@ -455,6 +609,16 @@ h1 {
 .reader-round svg {
   width: 20px;
   height: 20px;
+}
+
+.favorite-reader.active {
+  background: var(--gold);
+  border-color: rgba(255, 255, 255, .28);
+  color: #17120c;
+}
+
+.favorite-reader.active svg {
+  fill: currentColor;
 }
 
 .reader-title {
@@ -696,6 +860,7 @@ h1 {
 
 .chord-string-line,
 .chord-fret-line,
+.chord-barre,
 .chord-dot,
 .chord-base-fret {
   position: absolute;
@@ -733,6 +898,17 @@ h1 {
   background: var(--gold-2);
   box-shadow: 0 0 0 2px #181511;
   transform: translate(-50%, -50%);
+}
+
+.chord-barre {
+  left: calc(var(--string-start) * 20%);
+  right: calc((5 - var(--string-end)) * 20%);
+  top: calc((var(--fret) - .5) * 20%);
+  height: 16px;
+  border-radius: 999px;
+  background: var(--gold-2);
+  box-shadow: 0 0 0 2px #181511;
+  transform: translateY(-50%);
 }
 
 .chord-base-fret {
@@ -796,7 +972,7 @@ h1 {
 
 @media (min-width: 760px) {
   body {
-    background: #e9dfcf;
+    background: var(--desktop-bg);
     padding: 24px 0;
   }
 
@@ -1236,7 +1412,121 @@ body.screen-admin .main-area {
   font-weight: 950;
 }
 
+:root[data-theme="dark"] .app-shell {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .06), 0 26px 70px rgba(0, 0, 0, .46);
+}
+
+:root[data-theme="dark"] .cover {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(228, 185, 95, .18), transparent 34%),
+    linear-gradient(180deg, rgba(7, 10, 16, .08), rgba(2, 4, 8, .92)),
+    var(--black);
+}
+
+:root[data-theme="dark"] .brand-logo,
+:root[data-theme="dark"] .mini-logo,
+:root[data-theme="dark"] .install-prompt-logo {
+  background: #0f1624;
+  border-color: rgba(244, 217, 144, .24);
+}
+
+:root[data-theme="dark"] .search-box {
+  background: rgba(18, 27, 43, .96);
+  border: 1px solid rgba(244, 217, 144, .18);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .38);
+}
+
+:root[data-theme="dark"] .search-box svg {
+  color: var(--gold-2);
+}
+
+:root[data-theme="dark"] .search-box input::placeholder {
+  color: #b4bdcc;
+}
+
+:root[data-theme="dark"] .quick-card.active,
+:root[data-theme="dark"] .icon-button,
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] .song-card,
+:root[data-theme="dark"] .artist-card,
+:root[data-theme="dark"] .worship-song,
+:root[data-theme="dark"] .admin-metrics div,
+:root[data-theme="dark"] .admin-source-list article,
+:root[data-theme="dark"] .admin-public {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+:root[data-theme="dark"] .quick-card.active {
+  background: var(--paper-2);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .mini-action {
+  border-color: rgba(255, 255, 255, .08);
+}
+
+:root[data-theme="dark"] .install-prompt {
+  background: rgba(18, 27, 43, .98);
+  border-color: rgba(244, 217, 144, .18);
+}
+
+:root[data-theme="dark"] .mini-action.active {
+  background: rgba(228, 185, 95, .16);
+  color: var(--gold-2);
+  border-color: rgba(244, 217, 144, .28);
+}
+
+:root[data-theme="dark"] .play-index,
+:root[data-theme="dark"] .worship-index {
+  background: #1a2638;
+  color: #d7e0ee;
+}
+
+:root[data-theme="dark"] .tone-pill,
+:root[data-theme="dark"] .admin-source-list b,
+:root[data-theme="dark"] .admin-public b {
+  background: rgba(228, 185, 95, .14);
+  color: var(--gold-2);
+}
+
+:root[data-theme="dark"] .offline-badge {
+  background: rgba(143, 176, 143, .16);
+  color: #b8d2b7;
+}
+
+:root[data-theme="dark"] .worship-song-main span {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .empty-state,
+:root[data-theme="dark"] .worship-list .empty-state {
+  background: rgba(18, 27, 43, .62);
+}
+
+:root[data-theme="dark"] .chord-sheet.light-reader {
+  background: var(--paper);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .chord-sheet.light-reader i,
+:root[data-theme="dark"] .chord-sheet.light-reader .chord {
+  color: var(--gold-2);
+}
+
 @media (max-width: 420px) {
+  .install-prompt {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .install-prompt-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .install-prompt-close {
+    display: none;
+  }
+
   .worship-hero,
   .worship-list,
   .reader-top,
