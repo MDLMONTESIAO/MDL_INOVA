@@ -1,0 +1,22 @@
+{
+  "name": "cifras-mdl",
+  "version": "0.1.0",
+  "description": "Acervo Musical MDL Monte Sião",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "import": "node scripts/importar-acervo.js"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "keywords": [
+    "cifras",
+    "musica",
+    "mdl",
+    "monte-siao"
+  ],
+  "author": "MDL Monte Sião",
+  "license": "MIT"
+}

@@ -1,0 +1,7 @@
+node_modules/
+acervo/
+screenshots/
+public/data/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,197 @@
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+
+const ROOT = path.resolve(__dirname, "..");
+const CONFIG_PATH = path.join(ROOT, "data", "pastas.json");
+const DB_PATH = path.join(ROOT, "data", "acervo-db.json");
+const DATA_DIR = path.join(ROOT, "data");
+const SONGS_DIR = path.join(DATA_DIR, "songs");
+const INDEX_PATH = path.join(DATA_DIR, "index.json");
+
+const supportedExtensions = new Set([".html", ".htm", ".txt"]);
+
+function main() {
+  const sources = readSources();
+  const validSources = sources.filter((source) => source.path && fs.existsSync(source.path));
+
+  if (!validSources.length) {
+    console.warn("Nenhuma fonte local valida encontrada. Mantendo o acervo publicado atual.");
+    return;
+  }
+
+  resetOutput();
+
+  const songs = [];
+  for (const source of validSources) {
+    const files = listFiles(source.path);
+    for (const filePath of files) {
+      const ext = path.extname(filePath).toLowerCase();
+      if (!supportedExtensions.has(ext)) continue;
+
+      const html = readSongHtml(filePath, ext);
+      const song = buildSong(source, filePath, ext, html);
+      const record = { ...song, html };
+      fs.writeFileSync(path.join(SONGS_DIR, `${song.id}.json`), JSON.stringify(record, null, 2), "utf8");
+      songs.push(song);
+    }
+  }
+
+  songs.sort((a, b) => {
+    const artistCompare = a.artist.localeCompare(b.artist, "pt-BR");
+    return artistCompare || a.title.localeCompare(b.title, "pt-BR");
+  });
+
+  const artists = Array.from(new Set(songs.map((song) => song.artist))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const database = {
+    name: "Acervo Musical MDL Monte Sião",
+    generatedAt: new Date().toISOString(),
+    totalSongs: songs.length,
+    totalArtists: artists.length,
+    artists,
+    songs: songs.map((song) => ({
+      ...song,
+      apiUrl: `/api/songs/${song.id}`,
+      offlineKey: `mdl-song-${song.id}`
+    }))
+  };
+
+  fs.writeFileSync(DB_PATH, JSON.stringify(database, null, 2), "utf8");
+  fs.writeFileSync(INDEX_PATH, JSON.stringify(database, null, 2), "utf8");
+
+  console.log(`Importação concluída: ${songs.length} músicas, ${artists.length} artistas.`);
+}
+
+function readSources() {
+  if (!fs.existsSync(CONFIG_PATH)) {
+    throw new Error(`Arquivo não encontrado: ${CONFIG_PATH}`);
+  }
+  return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")).map((source) => ({
+    ...source,
+    path: path.isAbsolute(source.path) ? source.path : path.join(ROOT, source.path)
+  }));
+}
+
+function resetOutput() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (fs.existsSync(SONGS_DIR)) {
+    fs.rmSync(SONGS_DIR, { recursive: true, force: true });
+  }
+  fs.mkdirSync(SONGS_DIR, { recursive: true });
+}
+
+function listFiles(folder) {
+  const result = [];
+  const stack = [folder];
+
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.isFile()) {
+        result.push(fullPath);
+      }
+    }
+  }
+
+  return result;
+}
+
+function buildSong(source, filePath, ext, html) {
+  const artist = source.artist || artistFromPath(source.path, filePath);
+  const title = cleanTitle(path.basename(filePath, ext));
+  const hash = crypto.createHash("sha1").update(filePath).digest("hex").slice(0, 10);
+  const id = `${slugify(`${artist}-${title}`).slice(0, 58)}-${hash}`;
+  const stats = fs.statSync(filePath);
+
+  return {
+    id,
+    title,
+    artist,
+    collection: source.name || path.basename(source.path),
+    fileType: ext.replace(".", ""),
+    key: inferKeyFromHtml(html),
+    updatedAt: stats.mtime.toISOString()
+  };
+}
+
+function artistFromPath(rootPath, filePath) {
+  const relative = path.relative(rootPath, filePath);
+  const firstPart = relative.split(path.sep)[0];
+  if (!firstPart || firstPart === path.basename(filePath)) {
+    return formatName(path.basename(rootPath));
+  }
+  return formatName(firstPart);
+}
+
+function cleanTitle(name) {
+  return name
+    .replace(/^\s*\d+\s*[-–]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatName(name) {
+  const preserved = name.replace(/_/g, "-").split("-").filter(Boolean);
+  return preserved
+    .map((part) => {
+      if (/^[A-Z]{2,}$/.test(part)) return part;
+      return part.charAt(0).toLocaleUpperCase("pt-BR") + part.slice(1);
+    })
+    .join(" ");
+}
+
+function readSongHtml(filePath, ext) {
+  const raw = fs.readFileSync(filePath, "utf8");
+  if (ext === ".txt") {
+    return escapeHtml(raw);
+  }
+
+  const match = raw.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+  const pre = match ? match[1] : escapeHtml(stripTags(raw));
+  return sanitizePre(pre);
+}
+
+function sanitizePre(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "")
+    .trim();
+}
+
+function stripTags(html) {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+}
+
+function inferKeyFromHtml(html) {
+  const chordTag = String(html || "").match(/<i[^>]*>([\s\S]*?)<\/i>/i);
+  const text = chordTag ? stripTags(chordTag[1]) : stripTags(html);
+  const match = text.match(/\b([A-G](?:#|b)?)(?:[0-9A-Za-zº°+\-#b()]*)?(?:\/[A-G](?:#|b)?)?\b/);
+  return match ? match[1] : null;
+}
+
+function slugify(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "musica";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+main();
