@@ -113,6 +113,7 @@ const MOVABLE_CHORD_SHAPES = {
 const OPEN_STRING_NOTE_INDEX = { lowE: 4, a: 9 };
 const OFFLINE_DB_NAME = "mdl-acervo-offline";
 const OFFLINE_DB_VERSION = 1;
+const OFFLINE_BUNDLE_SIZE = 80;
 const INSTALL_PROMPT_AUTO_HIDE_MS = 3000;
 let deferredInstallPrompt = null;
 let installPromptAutoHideTimer = null;
@@ -133,6 +134,7 @@ const state = {
   playEditing: false,
   autoScrollTimer: null,
   offlineSongs: new Set(),
+  offlineArtistDownloads: new Map(),
   readerFont: Number(localStorage.getItem("mdl.readerFont") || 14),
   favorites: new Set(JSON.parse(localStorage.getItem("mdl.favorites") || "[]")),
   play: migratePlay(JSON.parse(localStorage.getItem("mdl.playEnsaio") || "[]"))
@@ -300,37 +302,39 @@ function handleClick(event) {
     }
     return showView(view);
   }
+  if (action) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (action === "open") return openSong(id);
+    if (action === "add-play") return addToPlay(id);
+    if (action === "remove-play") return removeFromPlay(id);
+    if (action === "favorite") return toggleFavorite(id);
+    if (action === "download-artist") return downloadArtistForOffline(artist);
+    if (action === "toggle-theme") return toggleTheme();
+    if (action === "install-app") return installApp();
+    if (action === "dismiss-install") return hideInstallPrompt();
+    if (action === "clear-play") return clearPlay();
+    if (action === "refresh") return refreshLibrary();
+    if (action === "back") return showView(state.previousView || "acervo");
+    if (action === "back-play") return showView(state.previousView && state.previousView !== "play" ? state.previousView : "acervo");
+    if (action === "go-home") return showView("acervo");
+    if (action === "favorite-current") return toggleFavorite(state.currentSongId);
+    if (action === "add-current-play") return addToPlay(state.currentSongId, currentKeyLabel());
+    if (action === "font-down") return setReaderFont(state.readerFont - 1);
+    if (action === "font-up") return setReaderFont(state.readerFont + 1);
+    if (action === "transpose-down") return transposeCurrentSong(-1);
+    if (action === "transpose-up") return transposeCurrentSong(1);
+    if (action === "reset-tone") return resetTone();
+    if (action === "toggle-autoscroll") return toggleAutoScroll();
+    if (action === "start-service") return startService();
+    if (action === "share-play") return sharePlay();
+    if (action === "toggle-edit-play") return togglePlayEditing();
+    if (action === "admin-refresh") return adminRefresh();
+    if (action === "close-chord-guide") return closeChordGuide();
+  }
+
   if (artist) return renderArtistSongs(artist);
-  if (!action) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  if (action === "open") return openSong(id);
-  if (action === "add-play") return addToPlay(id);
-  if (action === "remove-play") return removeFromPlay(id);
-  if (action === "favorite") return toggleFavorite(id);
-  if (action === "toggle-theme") return toggleTheme();
-  if (action === "install-app") return installApp();
-  if (action === "dismiss-install") return hideInstallPrompt();
-  if (action === "clear-play") return clearPlay();
-  if (action === "refresh") return refreshLibrary();
-  if (action === "back") return showView(state.previousView || "acervo");
-  if (action === "back-play") return showView(state.previousView && state.previousView !== "play" ? state.previousView : "acervo");
-  if (action === "go-home") return showView("acervo");
-  if (action === "favorite-current") return toggleFavorite(state.currentSongId);
-  if (action === "add-current-play") return addToPlay(state.currentSongId, currentKeyLabel());
-  if (action === "font-down") return setReaderFont(state.readerFont - 1);
-  if (action === "font-up") return setReaderFont(state.readerFont + 1);
-  if (action === "transpose-down") return transposeCurrentSong(-1);
-  if (action === "transpose-up") return transposeCurrentSong(1);
-  if (action === "reset-tone") return resetTone();
-  if (action === "toggle-autoscroll") return toggleAutoScroll();
-  if (action === "start-service") return startService();
-  if (action === "share-play") return sharePlay();
-  if (action === "toggle-edit-play") return togglePlayEditing();
-  if (action === "admin-refresh") return adminRefresh();
-  if (action === "close-chord-guide") return closeChordGuide();
 }
 
 function handleKeyDown(event) {
@@ -398,25 +402,66 @@ function renderPlay() {
 function renderArtists() {
   const groups = new Map();
   state.songs.forEach((song) => {
-    groups.set(song.artist, (groups.get(song.artist) || 0) + 1);
+    if (!groups.has(song.artist)) groups.set(song.artist, []);
+    groups.get(song.artist).push(song);
   });
 
   const artists = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
-  dom.artistList.innerHTML = artists.map(([artist, count]) => `
-    <button class="artist-card" type="button" data-artist="${escapeAttr(artist)}">
-      <span class="artist-main">
-        <span class="artist-title">${escapeHtml(artist)}</span>
-        <span class="artist-meta">${count} ${count === 1 ? "música" : "músicas"}</span>
-      </span>
-      <span class="mini-action primary" aria-hidden="true">›</span>
-    </button>
-  `).join("");
+  dom.artistList.innerHTML = artists.map(([artist, songs]) => renderArtistCard(artist, songs)).join("");
   updateStats();
+}
+
+function renderArtistCard(artist, songs) {
+  const total = songs.length;
+  const saved = songs.filter((song) => state.offlineSongs.has(song.id)).length;
+  const progress = state.offlineArtistDownloads.get(artist);
+  const isOffline = total > 0 && saved >= total;
+  const countLabel = `${total} ${total === 1 ? "música" : "músicas"}`;
+  const offlineLabel = progress
+    ? `Baixando ${Math.min(progress.saved, progress.total)}/${progress.total}`
+    : isOffline
+      ? "biblioteca offline"
+      : saved
+        ? `${saved}/${total} offline`
+        : "";
+  const metaLabel = [countLabel, offlineLabel].filter(Boolean).join(" · ");
+  const downloadTitle = isOffline
+    ? `Biblioteca de ${artist} já está offline`
+    : `Baixar biblioteca de cifras de ${artist}`;
+  const downloadClass = [
+    "mini-action",
+    "artist-download",
+    isOffline ? "active" : "",
+    progress ? "loading" : ""
+  ].filter(Boolean).join(" ");
+  const downloadState = progress ? ` disabled aria-busy="true"` : "";
+  const downloadIcon = progress
+    ? `<span class="download-spinner" aria-hidden="true"></span>`
+    : isOffline
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>`;
+
+  return `
+    <article class="artist-card">
+      <button class="artist-main" type="button" data-artist="${escapeAttr(artist)}">
+        <span class="artist-title">${escapeHtml(artist)}</span>
+        <span class="artist-meta">${escapeHtml(metaLabel)}</span>
+      </button>
+      <div class="artist-actions">
+        <button class="${downloadClass}" type="button" data-action="download-artist" data-artist="${escapeAttr(artist)}" title="${escapeAttr(downloadTitle)}" aria-label="${escapeAttr(downloadTitle)}"${downloadState}>
+          ${downloadIcon}
+        </button>
+        <button class="mini-action primary" type="button" data-artist="${escapeAttr(artist)}" title="Ver cifras" aria-label="Ver cifras de ${escapeAttr(artist)}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+    </article>
+  `;
 }
 
 function renderArtistSongs(artist) {
   dom.search.value = artist;
-  state.filtered = state.songs.filter((song) => song.artist === artist).slice(0, 120);
+  state.filtered = getArtistSongs(artist).slice(0, 120);
   showView("acervo");
   renderCatalog();
 }
@@ -775,6 +820,16 @@ function findSong(id) {
   return state.songs.find((song) => song.id === id);
 }
 
+function getArtistSongs(artist) {
+  return state.songs.filter((song) => song.artist === artist);
+}
+
+function getArtistOfflineInfo(artist) {
+  const songs = getArtistSongs(artist);
+  const saved = songs.filter((song) => state.offlineSongs.has(song.id)).length;
+  return { songs, saved, total: songs.length };
+}
+
 function migratePlay(items) {
   if (!Array.isArray(items)) return [];
   return items
@@ -788,17 +843,52 @@ function migratePlay(items) {
 
 async function downloadSongForOffline(id) {
   if (!id) return;
-  try {
-    const response = await fetch(`/api/songs/${encodeURIComponent(id)}`);
-    if (!response.ok) throw new Error("download-failed");
-    const song = await response.json();
-    await idbSaveSong(song);
-    state.offlineSongs.add(id);
-    renderPlay();
+  const saved = await downloadSingleSongForOffline(id);
+  if (saved) {
+    renderOfflineStatus();
     toast("Cifra disponível offline");
+  } else {
+    toast("Não foi possível baixar offline");
+  }
+}
+
+async function downloadArtistForOffline(artist) {
+  const artistName = String(artist || "");
+  if (!artistName.trim() || state.offlineArtistDownloads.has(artistName)) return;
+
+  const { songs, saved, total } = getArtistOfflineInfo(artistName);
+  if (!total) return toast("Artista não encontrado");
+
+  const pendingIds = songs
+    .map((song) => song.id)
+    .filter((id) => id && !state.offlineSongs.has(id));
+
+  if (!pendingIds.length) {
+    renderArtists();
+    return toast("Biblioteca já está offline");
+  }
+
+  state.offlineArtistDownloads.set(artistName, { saved, total });
+  renderArtists();
+  toast(`Baixando ${pendingIds.length} cifras`);
+
+  try {
+    await downloadIdsForOffline(pendingIds, (savedNow) => {
+      const current = state.offlineArtistDownloads.get(artistName);
+      if (!current) return;
+      current.saved = Math.min(total, saved + savedNow);
+      state.offlineArtistDownloads.set(artistName, current);
+      renderArtists();
+    });
+
+    renderOfflineStatus();
+    const info = getArtistOfflineInfo(artistName);
+    toast(info.saved >= info.total ? "Biblioteca offline pronta" : `${info.saved}/${info.total} cifras offline`);
   } catch {
-    const cached = await idbGetSong(id);
-    if (!cached) toast("Não foi possível baixar offline");
+    toast("Não foi possível baixar toda a biblioteca");
+  } finally {
+    state.offlineArtistDownloads.delete(artistName);
+    renderOfflineStatus();
   }
 }
 
@@ -807,21 +897,93 @@ async function downloadPlayForOffline() {
   if (!ids.length) return;
 
   try {
-    const response = await fetch("/api/offline-bundle", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids })
-    });
-    if (!response.ok) throw new Error("bundle-failed");
-    const bundle = await response.json();
-    for (const song of bundle.songs || []) {
-      await idbSaveSong(song);
-      state.offlineSongs.add(song.id);
-    }
-    renderPlay();
+    await downloadIdsForOffline(ids);
+    renderOfflineStatus();
   } catch {
-    await Promise.all(ids.map((id) => downloadSongForOffline(id)));
+    await Promise.all(ids.map((id) => downloadSingleSongForOffline(id)));
+    renderOfflineStatus();
   }
+}
+
+async function downloadIdsForOffline(ids, onProgress) {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean))).filter((id) => !state.offlineSongs.has(id));
+  const savedIds = [];
+
+  for (const chunk of chunkArray(uniqueIds, OFFLINE_BUNDLE_SIZE)) {
+    let savedChunkIds = [];
+    try {
+      savedChunkIds = await downloadOfflineBundle(chunk);
+    } catch {
+      savedChunkIds = [];
+      for (const id of chunk) {
+        if (await downloadSingleSongForOffline(id)) savedChunkIds.push(id);
+      }
+    }
+    savedIds.push(...savedChunkIds);
+    if (onProgress) onProgress(savedIds.length);
+  }
+
+  return savedIds;
+}
+
+async function downloadOfflineBundle(ids) {
+  const response = await fetch("/api/offline-bundle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids })
+  });
+  if (!response.ok) throw new Error("bundle-failed");
+
+  const bundle = await response.json();
+  const returnedIds = new Set();
+  const savedIds = [];
+
+  for (const song of bundle.songs || []) {
+    if (!song?.id) continue;
+    returnedIds.add(song.id);
+    if (await saveOfflineSongRecord(song)) savedIds.push(song.id);
+  }
+
+  for (const id of ids.filter((item) => !returnedIds.has(item))) {
+    if (await downloadSingleSongForOffline(id)) savedIds.push(id);
+  }
+
+  return savedIds;
+}
+
+async function downloadSingleSongForOffline(id) {
+  if (!id) return false;
+  try {
+    const response = await fetch(`/api/songs/${encodeURIComponent(id)}`);
+    if (!response.ok) throw new Error("download-failed");
+    const song = await response.json();
+    return saveOfflineSongRecord(song);
+  } catch {
+    const cached = await idbGetSong(id).catch(() => null);
+    if (!cached) return false;
+    state.offlineSongs.add(id);
+    return true;
+  }
+}
+
+async function saveOfflineSongRecord(song) {
+  if (!song?.id) return false;
+  await idbSaveSong(song);
+  state.offlineSongs.add(song.id);
+  return true;
+}
+
+function renderOfflineStatus() {
+  renderPlay();
+  renderArtists();
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
 
 async function refreshOfflineSongIds() {

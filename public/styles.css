@@ -457,7 +457,8 @@ h1 {
   gap: 4px;
 }
 
-.song-main {
+.song-main,
+.artist-main {
   padding: 0;
   border: 0;
   background: transparent;
@@ -484,7 +485,8 @@ h1 {
   font-weight: 750;
 }
 
-.song-actions {
+.song-actions,
+.artist-actions {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -521,6 +523,31 @@ h1 {
 .mini-action.active {
   background: #2d2720;
   color: var(--gold-2);
+}
+
+.mini-action[disabled] {
+  cursor: progress;
+  opacity: .74;
+}
+
+.artist-download.active {
+  background: #dfe8d9;
+  color: #557053;
+}
+
+.download-spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: download-spin .72s linear infinite;
+}
+
+@keyframes download-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -1474,6 +1501,12 @@ body.screen-admin .main-area {
   background: rgba(228, 185, 95, .16);
   color: var(--gold-2);
   border-color: rgba(244, 217, 144, .28);
+}
+
+:root[data-theme="dark"] .artist-download.active {
+  background: rgba(143, 176, 143, .16);
+  color: #b8d2b7;
+  border-color: rgba(143, 176, 143, .28);
 }
 
 :root[data-theme="dark"] .play-index,
