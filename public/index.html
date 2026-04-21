@@ -4,9 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111111">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cifras MDL">
   <title>Acervo Musical MDL Monte Sião</title>
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/logo-monte-siao.jpg">
   <link rel="stylesheet" href="/styles.css">
+  <script>
+    (() => {
+      const savedTheme = localStorage.getItem("mdl.theme");
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
+      document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+    })();
+  </script>
 </head>
 <body>
   <div class="app-shell">
@@ -23,7 +34,25 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
         <input id="searchInput" type="search" placeholder="Buscar música, artista ou trecho">
       </label>
+
+      <div class="cover-actions" aria-label="Acoes do aplicativo">
+        <button class="cover-action theme-action" type="button" data-action="toggle-theme" id="themeToggleButton" aria-label="Ativar modo noturno" aria-pressed="false">
+          <span class="theme-icon" id="themeToggleIcon" aria-hidden="true">&#9790;</span>
+        </button>
+      </div>
+
+      <p class="developer-signature">Desenvolvido por Odiman Ramalho 21970955634</p>
     </header>
+
+    <aside class="install-prompt" id="installPrompt" hidden aria-live="polite">
+      <img src="/assets/logo-monte-siao.jpg" alt="" class="install-prompt-logo">
+      <div class="install-prompt-copy">
+        <strong>Instale o Cifras MDL</strong>
+        <span id="installPromptText">Adicione um icone na tela inicial para abrir mais rapido.</span>
+      </div>
+      <button class="install-prompt-action" type="button" data-action="install-app" id="installPromptButton">Instalar</button>
+      <button class="install-prompt-close" type="button" data-action="dismiss-install" aria-label="Fechar aviso de instalacao">&times;</button>
+    </aside>
 
     <section class="quick-cards" aria-label="Navegação principal">
       <button class="quick-card active" type="button" data-view="acervo" title="Acervo">
@@ -126,7 +155,7 @@
             <h2 id="readerTitle">Música</h2>
             <p id="readerArtist">Artista</p>
           </div>
-          <button class="reader-round" type="button" data-action="favorite-current" title="Favoritar">
+          <button class="reader-round favorite-reader" type="button" data-action="favorite-current" id="readerFavoriteButton" title="Favoritar" aria-pressed="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l2 4 4 .5-3 3 .8 4.5-3.8-2.2L8.2 17l.8-4.5-3-3 4-.5z"></path></svg>
           </button>
         </div>
@@ -227,6 +256,8 @@
         </div>
       </section>
     </main>
+
+    <footer class="screen-footer">Desenvolvido por Odiman Ramalho 21970955634</footer>
   </div>
 
   <script src="/app.js"></script>
