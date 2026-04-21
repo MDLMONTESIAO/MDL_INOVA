@@ -4,7 +4,6 @@ const NOTE_INDEX = {
   C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, F: 5,
   "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11
 };
-const CHORD_TOKEN_PATTERN = /\b([A-G](?:#|b)?)([0-9A-Za-zº°+\-#b()]*)(?:\/([A-G](?:#|b)?))?\b/g;
 const STRING_LABELS = ["E", "A", "D", "G", "B", "e"];
 const CHORD_FAMILY_META = {
   major: { label: "Maior", intervals: [0, 4, 7], lookup: "", shapeFamily: "major" },
@@ -849,22 +848,34 @@ function decorateChordHtml(html) {
   return template.innerHTML;
 }
 
+function splitChordSegments(text) {
+  return String(text || "").split(/(\s+)/);
+}
+
+function mapChordTokens(text, chordMapper, otherMapper = (segment) => segment) {
+  return splitChordSegments(text).map((segment) => {
+    if (!segment) return "";
+    if (/^\s+$/.test(segment)) return segment;
+    const parsed = parseChordName(segment);
+    return parsed ? chordMapper(parsed, segment) : otherMapper(segment);
+  }).join("");
+}
+
+function findFirstChordToken(text) {
+  for (const segment of splitChordSegments(text)) {
+    if (!segment || /^\s+$/.test(segment)) continue;
+    const parsed = parseChordName(segment);
+    if (parsed) return parsed;
+  }
+  return null;
+}
+
 function wrapChordNodeTokens(text) {
-  let markup = "";
-  let lastIndex = 0;
-  CHORD_TOKEN_PATTERN.lastIndex = 0;
-
-  text.replace(CHORD_TOKEN_PATTERN, (match, root, suffix, bass, offset) => {
-    const chordText = `${root}${suffix || ""}${bass ? `/${bass}` : ""}`;
-    markup += escapeHtml(text.slice(lastIndex, offset));
-    markup += `<span class="chord-token" data-chord="${escapeAttr(chordText)}" role="button" tabindex="0" aria-label="Mostrar acorde ${escapeAttr(chordText)}">${escapeHtml(chordText)}</span>`;
-    lastIndex = offset + chordText.length;
-    return match;
-  });
-
-  if (!markup) return escapeHtml(text);
-  markup += escapeHtml(text.slice(lastIndex));
-  return markup;
+  return mapChordTokens(
+    text,
+    (_, chordText) => `<span class="chord-token" data-chord="${escapeAttr(chordText)}" role="button" tabindex="0" aria-label="Mostrar acorde ${escapeAttr(chordText)}">${escapeHtml(chordText)}</span>`,
+    (segment) => escapeHtml(segment)
+  );
 }
 
 function buildChordGuide(chordName) {
@@ -1071,11 +1082,11 @@ function transposeHtml(html, semitones) {
 }
 
 function transposeChordText(text, semitones) {
-  CHORD_TOKEN_PATTERN.lastIndex = 0;
-  return String(text || "").replace(CHORD_TOKEN_PATTERN, (match, root, suffix = "", bass) => {
-    const nextRoot = transposeNote(root, semitones);
-    const nextBass = bass ? `/${transposeNote(bass, semitones)}` : "";
-    return `${nextRoot}${suffix}${nextBass}`;
+  if (!semitones) return String(text || "");
+  return mapChordTokens(text, (parsed) => {
+    const nextRoot = transposeNote(parsed.root, semitones);
+    const nextBass = parsed.bass ? `/${transposeNote(parsed.bass, semitones)}` : "";
+    return `${nextRoot}${parsed.suffix}${nextBass}`;
   });
 }
 
@@ -1097,6 +1108,14 @@ function inferKeyFromHtml(html) {
 
 function emptyState(text) {
   return `<div class="empty-state">${escapeHtml(text)}</div>`;
+}
+
+function inferKeyFromHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const firstChordNode = template.content.querySelector("i");
+  const text = firstChordNode ? firstChordNode.textContent : template.content.textContent;
+  return findFirstChordToken(text)?.root || null;
 }
 
 function toast(text) {
