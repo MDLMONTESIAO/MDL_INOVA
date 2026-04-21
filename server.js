@@ -5,10 +5,15 @@ const { spawn } = require("child_process");
 
 const PORT = Number(process.env.PORT || 3030);
 const PUBLIC_DIR = path.join(__dirname, "public");
-const CONFIG_PATH = path.join(__dirname, "data", "pastas.json");
-const DB_PATH = path.join(__dirname, "data", "acervo-db.json");
-const INDEX_PATH = path.join(__dirname, "data", "index.json");
-const SONGS_DIR = path.join(__dirname, "data", "songs");
+const APP_DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : APP_DATA_DIR;
+const CONFIG_PATH = path.join(APP_DATA_DIR, "pastas.json");
+const DB_PATH = path.join(DATA_DIR, "acervo-db.json");
+const FALLBACK_DB_PATH = path.join(APP_DATA_DIR, "acervo-db.json");
+const INDEX_PATH = path.join(DATA_DIR, "index.json");
+const FALLBACK_INDEX_PATH = path.join(APP_DATA_DIR, "index.json");
+const SONGS_DIR = path.join(DATA_DIR, "songs");
+const FALLBACK_SONGS_DIR = path.join(APP_DATA_DIR, "songs");
 const IMPORT_SCRIPT = path.join(__dirname, "scripts", "importar-acervo.js");
 
 let importRunning = false;
@@ -36,16 +41,19 @@ function sendJson(res, statusCode, payload) {
 }
 
 function readCatalogDb() {
-  if (!fs.existsSync(DB_PATH)) {
+  const dbPath = fs.existsSync(DB_PATH) ? DB_PATH : FALLBACK_DB_PATH;
+  if (!fs.existsSync(dbPath)) {
     return null;
   }
-  return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+  return JSON.parse(fs.readFileSync(dbPath, "utf8"));
 }
 
 function readSongRecord(id) {
   const safeId = String(id || "").replace(/[^a-zA-Z0-9_-]/g, "");
   if (!safeId) return null;
-  const songPath = path.join(SONGS_DIR, `${safeId}.json`);
+  const primarySongPath = path.join(SONGS_DIR, `${safeId}.json`);
+  const fallbackSongPath = path.join(FALLBACK_SONGS_DIR, `${safeId}.json`);
+  const songPath = fs.existsSync(primarySongPath) ? primarySongPath : fallbackSongPath;
   if (!fs.existsSync(songPath)) return null;
   return JSON.parse(fs.readFileSync(songPath, "utf8"));
 }
@@ -86,12 +94,13 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
   if (req.url === "/api/status") {
-    if (!fs.existsSync(INDEX_PATH)) {
+    const statusPath = fs.existsSync(INDEX_PATH) ? INDEX_PATH : FALLBACK_INDEX_PATH;
+    if (!fs.existsSync(statusPath)) {
       return sendJson(res, 200, { ready: false, songs: 0, message: "index-not-found" });
     }
 
     try {
-      const index = JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
+      const index = JSON.parse(fs.readFileSync(statusPath, "utf8"));
       return sendJson(res, 200, {
         ready: true,
         songs: Array.isArray(index.songs) ? index.songs.length : 0,

@@ -100,8 +100,32 @@ render.yaml
 Resumo do fluxo:
 
 1. Envie o projeto para um repositorio GitHub.
-2. No Render, crie um Web Service a partir desse repositorio.
-3. Use o `render.yaml` da raiz para subir a aplicacao.
-4. O disco persistente fica montado em `data/`, onde o sistema guarda o banco do acervo e as cifras indexadas.
+2. No Render, o caminho mais simples e usar `New > Blueprint` para o Render ler o `render.yaml` da raiz.
+3. Se preferir criar manualmente em `New > Web Service`, use:
+
+```text
+Name: acervo-musical-mdl
+Language: Node
+Branch: main
+Root Directory: (deixe vazio)
+Build Command: npm install
+Start Command: npm start
+Plan: Starter
+```
+
+4. Em `Advanced`, adicione um disco persistente com:
+
+```text
+Mount Path: /opt/render/project/src/storage
+Size: 5 GB
+```
+
+5. Em `Environment Variables`, adicione:
+
+```text
+DATA_DIR=/opt/render/project/src/storage
+```
+
+6. O Render vai subir o app publico e o servidor passa a usar o disco para gravar o banco do acervo e as cifras indexadas sem sobrescrever os arquivos padrao do repositorio.
 
 Se quiser publicar atualizacoes do acervo sem expor o robo, rode o importador no seu PC e envie os arquivos gerados em `data/` junto com o deploy do sistema.
