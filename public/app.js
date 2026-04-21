@@ -426,11 +426,12 @@ function renderSongCard(song) {
   const favoriteClass = isFavorite ? "mini-action active" : "mini-action";
   const favoriteTitle = isFavorite ? "Remover dos favoritos" : "Favoritar";
   const favoriteGlyph = isFavorite ? "★" : "☆";
+  const songMeta = getSongMetaLabel(song);
   return `
     <article class="song-card">
       <button class="song-main" type="button" data-action="open" data-id="${escapeAttr(song.id)}">
         <span class="song-title">${escapeHtml(song.title)}</span>
-        <span class="song-meta">${escapeHtml(song.artist)}${song.collection ? ` · ${escapeHtml(song.collection)}` : ""}</span>
+        <span class="song-meta">${escapeHtml(songMeta)}</span>
       </button>
       <div class="song-actions">
         <button class="${favoriteClass}" type="button" data-action="favorite" data-id="${escapeAttr(song.id)}" title="${favoriteTitle}" aria-label="${favoriteTitle}" aria-pressed="${isFavorite}">${favoriteGlyph}</button>
@@ -440,6 +441,17 @@ function renderSongCard(song) {
       </div>
     </article>
   `;
+}
+
+function getSongMetaLabel(song) {
+  const collection = getVisibleCollection(song.collection);
+  return [song.artist, collection].filter(Boolean).join(" · ");
+}
+
+function getVisibleCollection(collection) {
+  const label = String(collection || "").trim();
+  if (!label || normalize(label) === "cifras_multi") return "";
+  return label;
 }
 
 function renderWorshipSong(entry, song, index) {
