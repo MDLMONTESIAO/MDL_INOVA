@@ -2,6 +2,8 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
+const net = require("net");
+const tls = require("tls");
 const { spawn } = require("child_process");
 
 const PORT = Number(process.env.PORT || 3030);
@@ -17,10 +19,21 @@ const SONGS_DIR = path.join(DATA_DIR, "songs");
 const FALLBACK_SONGS_DIR = path.join(APP_DATA_DIR, "songs");
 const IMPORT_SCRIPT = path.join(__dirname, "scripts", "importar-acervo.js");
 const AUTH_PATH = path.join(DATA_DIR, "auth.json");
+const DEVICE_HEADER = "x-device-id";
 const TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
+const RESET_CODE_TTL_MS = 1000 * 60 * 15;
+const RESET_RESEND_INTERVAL_MS = 1000 * 60;
+const LOCAL_RESET_PREVIEW = !process.env.RENDER && !process.env.RENDER_SERVICE_ID && process.env.NODE_ENV !== "production";
+const SMTP_SECURE = /^(1|true|yes)$/i.test(String(process.env.SMTP_SECURE || ""));
+const SMTP_HOST = String(process.env.SMTP_HOST || "").trim();
+const SMTP_PORT = Number(process.env.SMTP_PORT || (SMTP_SECURE ? 465 : 587));
+const SMTP_USER = String(process.env.SMTP_USER || "").trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || "");
+const SMTP_FROM = String(process.env.SMTP_FROM || SMTP_USER || "").trim();
+const SMTP_HELO = String(process.env.SMTP_HELO || "mdl-inova.local").trim();
 const AUTH_USERS = {
-  lider: { label: "Líder", role: "leader", defaultPassword: "1234" },
-  musico: { label: "Músico", role: "musician", defaultPassword: "1234" }
+  lider: { label: "Lider", role: "leader", defaultPassword: "1234" },
+  musico: { label: "Musico", role: "musician", defaultPassword: "1234" }
 };
 
 let importRunning = false;
@@ -49,9 +62,7 @@ function sendJson(res, statusCode, payload) {
 
 function readCatalogDb() {
   const dbPath = fs.existsSync(DB_PATH) ? DB_PATH : FALLBACK_DB_PATH;
-  if (!fs.existsSync(dbPath)) {
-    return null;
-  }
+  if (!fs.existsSync(dbPath)) return null;
   return JSON.parse(fs.readFileSync(dbPath, "utf8"));
 }
 
@@ -67,44 +78,108 @@ function readSongRecord(id) {
 
 function ensureAuthStore() {
   fs.mkdirSync(path.dirname(AUTH_PATH), { recursive: true });
-  if (fs.existsSync(AUTH_PATH)) {
-    const store = JSON.parse(fs.readFileSync(AUTH_PATH, "utf8"));
-    let changed = false;
-    store.users = store.users || {};
-    for (const [id, config] of Object.entries(AUTH_USERS)) {
-      if (!store.users[id]) {
-        store.users[id] = createPasswordRecord(config.defaultPassword, config);
-        changed = true;
-      }
+  const rawStore = fs.existsSync(AUTH_PATH)
+    ? safeJsonParse(fs.readFileSync(AUTH_PATH, "utf8"), {})
+    : {};
+  const store = normalizeAuthStore(rawStore);
+  if (JSON.stringify(rawStore) !== JSON.stringify(store)) {
+    writeAuthStore(store);
+  }
+  return store;
+}
+
+function normalizeAuthStore(input) {
+  const store = input && typeof input === "object" ? input : {};
+  const normalized = {
+    secret: typeof store.secret === "string" && store.secret.trim()
+      ? store.secret.trim()
+      : crypto.randomBytes(32).toString("hex"),
+    devices: {}
+  };
+
+  if (store.devices && typeof store.devices === "object" && !Array.isArray(store.devices)) {
+    for (const [rawId, device] of Object.entries(store.devices)) {
+      const deviceId = normalizeDeviceId(rawId);
+      if (!deviceId) continue;
+      normalized.devices[deviceId] = normalizeDeviceStore(device);
     }
-    if (!store.secret) {
-      store.secret = crypto.randomBytes(32).toString("hex");
-      changed = true;
-    }
-    if (changed) writeAuthStore(store);
-    return store;
   }
 
-  const store = {
-    secret: crypto.randomBytes(32).toString("hex"),
-    users: Object.fromEntries(
-      Object.entries(AUTH_USERS).map(([id, config]) => [id, createPasswordRecord(config.defaultPassword, config)])
-    )
+  if (!Object.keys(normalized.devices).length && store.users && typeof store.users === "object") {
+    normalized.devices["legacy-device"] = normalizeDeviceStore({
+      label: "Aparelho migrado",
+      users: store.users,
+      resetRequests: store.resetRequests
+    });
+  }
+
+  return normalized;
+}
+
+function normalizeDeviceStore(input) {
+  const device = input && typeof input === "object" ? input : {};
+  const normalized = {
+    label: normalizeDeviceLabel(device.label),
+    createdAt: typeof device.createdAt === "string" && device.createdAt ? device.createdAt : new Date().toISOString(),
+    users: {},
+    resetRequests: {}
   };
-  writeAuthStore(store);
-  return store;
+
+  const rawUsers = device.users && typeof device.users === "object" ? device.users : {};
+  for (const [userId, config] of Object.entries(AUTH_USERS)) {
+    normalized.users[userId] = normalizeUserRecord(rawUsers[userId], config);
+  }
+
+  const rawResetRequests = device.resetRequests && typeof device.resetRequests === "object"
+    ? device.resetRequests
+    : {};
+  for (const [userId, request] of Object.entries(rawResetRequests)) {
+    if (!AUTH_USERS[userId]) continue;
+    normalized.resetRequests[userId] = normalizeResetRequest(request);
+  }
+
+  return normalized;
+}
+
+function normalizeUserRecord(input, config) {
+  const user = input && typeof input === "object" ? input : {};
+  const email = normalizeEmail(user.email);
+  if (!user.passwordHash || !user.salt || !user.iterations) {
+    return createPasswordRecord(config.defaultPassword, config, { email });
+  }
+
+  return {
+    label: typeof user.label === "string" && user.label.trim() ? user.label.trim() : config.label,
+    role: typeof user.role === "string" && user.role.trim() ? user.role.trim() : config.role,
+    email,
+    salt: String(user.salt),
+    iterations: Math.max(1000, Number(user.iterations) || 120000),
+    passwordHash: String(user.passwordHash),
+    updatedAt: typeof user.updatedAt === "string" && user.updatedAt ? user.updatedAt : new Date().toISOString()
+  };
+}
+
+function normalizeResetRequest(input) {
+  const request = input && typeof input === "object" ? input : {};
+  return {
+    email: normalizeEmail(request.email),
+    codeHash: typeof request.codeHash === "string" ? request.codeHash : "",
+    requestedAt: typeof request.requestedAt === "string" ? request.requestedAt : "",
+    expiresAt: typeof request.expiresAt === "string" ? request.expiresAt : ""
+  };
 }
 
 function writeAuthStore(store) {
   fs.writeFileSync(AUTH_PATH, JSON.stringify(store, null, 2), "utf8");
 }
 
-function createPasswordRecord(password, config) {
+function createPasswordRecord(password, config, options = {}) {
   const salt = crypto.randomBytes(16).toString("hex");
   const iterations = 120000;
   return {
     label: config.label,
     role: config.role,
+    email: normalizeEmail(options.email),
     salt,
     iterations,
     passwordHash: hashPassword(password, salt, iterations),
@@ -132,13 +207,15 @@ function publicUser(id, user) {
   return {
     id,
     label: user.label,
-    role: user.role
+    role: user.role,
+    email: user.email || ""
   };
 }
 
-function signToken(userId, user, secret) {
+function signToken(userId, user, secret, deviceId) {
   const payload = {
     sub: userId,
+    did: deviceId,
     role: user.role,
     label: user.label,
     exp: Date.now() + TOKEN_MAX_AGE_MS
@@ -162,9 +239,13 @@ function verifyToken(req) {
 
   try {
     const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-    const user = store.users?.[payload.sub];
-    if (!user || payload.exp < Date.now()) return null;
-    return { userId: payload.sub, user, store };
+    const tokenDeviceId = normalizeDeviceId(payload.did);
+    const requestDeviceId = getRequestDeviceId(req);
+    if (!tokenDeviceId || (requestDeviceId && requestDeviceId !== tokenDeviceId)) return null;
+    const device = store.devices?.[tokenDeviceId];
+    const user = device?.users?.[payload.sub];
+    if (!device || !user || payload.exp < Date.now()) return null;
+    return { userId: payload.sub, user, store, deviceId: tokenDeviceId, device };
   } catch {
     return null;
   }
@@ -214,6 +295,291 @@ function safeStaticPath(urlPath) {
   return fullPath.startsWith(PUBLIC_DIR) ? fullPath : null;
 }
 
+function getRequestDeviceId(req, body = null) {
+  return normalizeDeviceId(req.headers[DEVICE_HEADER] || body?.deviceId);
+}
+
+function getOrCreateDeviceContext(req, body = null) {
+  const store = ensureAuthStore();
+  const deviceId = getRequestDeviceId(req, body);
+  if (!deviceId) return null;
+
+  const nextDevice = store.devices[deviceId]
+    ? normalizeDeviceStore({
+        ...store.devices[deviceId],
+        label: normalizeDeviceLabel(body?.deviceLabel) || store.devices[deviceId].label
+      })
+    : normalizeDeviceStore({ label: body?.deviceLabel });
+
+  if (JSON.stringify(store.devices[deviceId]) !== JSON.stringify(nextDevice)) {
+    store.devices[deviceId] = nextDevice;
+    writeAuthStore(store);
+  }
+
+  return { store, deviceId, device: store.devices[deviceId] };
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function normalizeUserId(value) {
+  const normalized = normalizeText(value).replace(/[^a-z0-9_-]/g, "");
+  return normalized === "musico" ? "musico" : normalized === "lider" ? "lider" : "";
+}
+
+function normalizeDeviceId(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return normalized.length >= 12 && normalized.length <= 80 ? normalized : "";
+}
+
+function normalizeDeviceLabel(value) {
+  const label = String(value || "").trim().replace(/\s+/g, " ");
+  return label ? label.slice(0, 120) : "";
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function createResetCode() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function hashResetCode(code, secret, deviceId, userId, email) {
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`${deviceId}:${userId}:${normalizeEmail(email)}:${String(code)}`)
+    .digest("hex");
+}
+
+function isEmailDeliveryConfigured() {
+  return Boolean(SMTP_HOST && SMTP_PORT && SMTP_FROM);
+}
+
+function makeResponseError(code, message) {
+  const error = new Error(message || code);
+  error.code = code;
+  return error;
+}
+
+async function sendResetCodeEmail(email, userLabel, code) {
+  const subject = "Recuperacao de senha - MDL Inova";
+  const text = [
+    "Acervo Musical MDL Inova",
+    "",
+    `Perfil: ${userLabel}`,
+    `Codigo de recuperacao: ${code}`,
+    "Validade: 15 minutos neste aparelho.",
+    "",
+    "A senha antiga nao pode ser enviada por e-mail.",
+    "Se voce nao solicitou a troca, ignore esta mensagem."
+  ].join("\n");
+
+  if (!isEmailDeliveryConfigured()) {
+    throw makeResponseError("email-not-configured", "email-not-configured");
+  }
+
+  await sendSmtpMail({ to: email, subject, text });
+}
+
+async function sendSmtpMail({ to, subject, text }) {
+  const connection = await openSmtpConnection();
+  try {
+    const greeting = await connection.readResponse();
+    if (greeting.code !== 220) {
+      throw new Error(`smtp-greeting-${greeting.code || "unknown"}`);
+    }
+
+    let ehloResponse = await connection.command(`EHLO ${SMTP_HELO}`, [250]);
+    if (!SMTP_SECURE && ehloResponse.lines.some((line) => /STARTTLS/i.test(line))) {
+      await connection.command("STARTTLS", [220]);
+      connection.detach();
+      const secureSocket = await startTls(connection.socket);
+      connection.replaceSocket(secureSocket);
+      ehloResponse = await connection.command(`EHLO ${SMTP_HELO}`, [250]);
+    }
+
+    if (SMTP_USER) {
+      await connection.command("AUTH LOGIN", [334]);
+      await connection.command(Buffer.from(SMTP_USER, "utf8").toString("base64"), [334]);
+      await connection.command(Buffer.from(SMTP_PASS, "utf8").toString("base64"), [235]);
+    }
+
+    await connection.command(`MAIL FROM:<${extractEmailAddress(SMTP_FROM)}>`, [250]);
+    await connection.command(`RCPT TO:<${extractEmailAddress(to)}>`, [250, 251]);
+    await connection.command("DATA", [354]);
+
+    const message = [
+      `From: ${SMTP_FROM}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'Content-Type: text/plain; charset="utf-8"',
+      "MIME-Version: 1.0",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      dotStuff(String(text || "")).replace(/\r?\n/g, "\r\n")
+    ].join("\r\n");
+
+    await connection.sendData(`${message}\r\n.\r\n`, [250]);
+    await connection.command("QUIT", [221]);
+  } finally {
+    connection.close();
+  }
+}
+
+function extractEmailAddress(value) {
+  const email = String(value || "").match(/<([^>]+)>/);
+  return normalizeEmail(email ? email[1] : value);
+}
+
+function dotStuff(text) {
+  return String(text || "").replace(/(^|\n)\./g, "$1..");
+}
+
+function openSmtpConnection() {
+  return new Promise((resolve, reject) => {
+    const handleError = (error) => reject(error);
+    const socket = SMTP_SECURE
+      ? tls.connect({ host: SMTP_HOST, port: SMTP_PORT, servername: SMTP_HOST }, () => resolve(new SmtpConnection(socket)))
+      : net.connect({ host: SMTP_HOST, port: SMTP_PORT }, () => resolve(new SmtpConnection(socket)));
+
+    socket.setEncoding("utf8");
+    socket.setTimeout(15000, () => socket.destroy(new Error("smtp-timeout")));
+    socket.once("error", handleError);
+  });
+}
+
+function startTls(socket) {
+  return new Promise((resolve, reject) => {
+    const secureSocket = tls.connect({ socket, servername: SMTP_HOST }, () => resolve(secureSocket));
+    secureSocket.setEncoding("utf8");
+    secureSocket.setTimeout(15000, () => secureSocket.destroy(new Error("smtp-timeout")));
+    secureSocket.once("error", reject);
+  });
+}
+
+class SmtpConnection {
+  constructor(socket) {
+    this.socket = socket;
+    this.buffer = "";
+    this.pendingResponse = [];
+    this.responses = [];
+    this.waiters = [];
+    this.closed = false;
+    this.attach(socket);
+  }
+
+  attach(socket) {
+    socket.on("data", (chunk) => this.handleData(chunk));
+    socket.on("error", (error) => this.fail(error));
+    socket.on("close", () => this.fail(new Error("smtp-closed")));
+  }
+
+  detach() {
+    this.socket.removeAllListeners("data");
+    this.socket.removeAllListeners("error");
+    this.socket.removeAllListeners("close");
+  }
+
+  replaceSocket(socket) {
+    this.socket = socket;
+    this.buffer = "";
+    this.pendingResponse = [];
+    this.responses = [];
+    this.waiters = [];
+    this.closed = false;
+    this.attach(socket);
+  }
+
+  handleData(chunk) {
+    this.buffer += chunk;
+    let newlineIndex = this.buffer.indexOf("\n");
+    while (newlineIndex >= 0) {
+      const line = this.buffer.slice(0, newlineIndex).replace(/\r$/, "");
+      this.buffer = this.buffer.slice(newlineIndex + 1);
+      this.pendingResponse.push(line);
+      if (/^\d{3} /.test(line)) {
+        this.enqueue({
+          code: Number(line.slice(0, 3)),
+          lines: this.pendingResponse.splice(0)
+        });
+      }
+      newlineIndex = this.buffer.indexOf("\n");
+    }
+  }
+
+  enqueue(response) {
+    const waiter = this.waiters.shift();
+    if (waiter) {
+      waiter.resolve(response);
+      return;
+    }
+    this.responses.push(response);
+  }
+
+  readResponse() {
+    if (this.responses.length) {
+      return Promise.resolve(this.responses.shift());
+    }
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject });
+    });
+  }
+
+  async command(command, expectedCodes) {
+    this.socket.write(`${command}\r\n`);
+    const response = await this.readResponse();
+    if (expectedCodes && !expectedCodes.includes(response.code)) {
+      throw new Error(`smtp-${command.split(" ")[0].toLowerCase()}-${response.code}`);
+    }
+    return response;
+  }
+
+  async sendData(payload, expectedCodes) {
+    this.socket.write(payload);
+    const response = await this.readResponse();
+    if (expectedCodes && !expectedCodes.includes(response.code)) {
+      throw new Error(`smtp-data-${response.code}`);
+    }
+    return response;
+  }
+
+  fail(error) {
+    if (this.closed) return;
+    this.closed = true;
+    while (this.waiters.length) {
+      this.waiters.shift().reject(error);
+    }
+  }
+
+  close() {
+    this.closed = true;
+    try {
+      this.socket.end();
+    } catch {}
+    try {
+      this.socket.destroy();
+    } catch {}
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
@@ -227,8 +593,12 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await parseJsonBody(req);
       const userId = normalizeUserId(body.userId);
-      const store = ensureAuthStore();
-      const user = store.users?.[userId];
+      const deviceContext = getOrCreateDeviceContext(req, body);
+      if (!userId || !deviceContext) {
+        return sendJson(res, 400, { ok: false, error: "invalid-device" });
+      }
+
+      const user = deviceContext.device.users?.[userId];
       if (!user || !verifyPassword(body.password, user)) {
         return sendJson(res, 401, { ok: false, error: "invalid-login" });
       }
@@ -236,10 +606,30 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         user: publicUser(userId, user),
-        token: signToken(userId, user, store.secret)
+        token: signToken(userId, user, deviceContext.store.secret, deviceContext.deviceId)
       });
     } catch (error) {
-      return sendJson(res, 400, { ok: false, error: error.message });
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
+    }
+  }
+
+  if (url.pathname === "/api/auth/update-email" && req.method === "POST") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+
+    try {
+      const body = await parseJsonBody(req);
+      const email = normalizeEmail(body.email);
+      if (email && !isValidEmail(email)) {
+        return sendJson(res, 400, { ok: false, error: "invalid-email" });
+      }
+
+      session.device.users[session.userId].email = email;
+      session.device.users[session.userId].updatedAt = new Date().toISOString();
+      writeAuthStore(session.store);
+      return sendJson(res, 200, { ok: true, user: publicUser(session.userId, session.device.users[session.userId]) });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
     }
   }
 
@@ -257,11 +647,122 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { ok: false, error: "invalid-current-password" });
       }
 
-      session.store.users[session.userId] = createPasswordRecord(newPassword, AUTH_USERS[session.userId] || session.user);
+      session.device.users[session.userId] = createPasswordRecord(
+        newPassword,
+        AUTH_USERS[session.userId] || session.user,
+        { email: session.user.email }
+      );
+      delete session.device.resetRequests[session.userId];
       writeAuthStore(session.store);
-      return sendJson(res, 200, { ok: true, user: publicUser(session.userId, session.store.users[session.userId]) });
+      return sendJson(res, 200, { ok: true, user: publicUser(session.userId, session.device.users[session.userId]) });
     } catch (error) {
-      return sendJson(res, 400, { ok: false, error: error.message });
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
+    }
+  }
+
+  if (url.pathname === "/api/auth/request-reset" && req.method === "POST") {
+    try {
+      const body = await parseJsonBody(req);
+      const userId = normalizeUserId(body.userId);
+      const email = normalizeEmail(body.email);
+      const deviceContext = getOrCreateDeviceContext(req, body);
+      if (!userId || !deviceContext) {
+        return sendJson(res, 400, { ok: false, error: "invalid-device" });
+      }
+      if (!isValidEmail(email)) {
+        return sendJson(res, 400, { ok: false, error: "invalid-email" });
+      }
+
+      const user = deviceContext.device.users?.[userId];
+      if (!user?.email) {
+        return sendJson(res, 404, { ok: false, error: "email-not-registered" });
+      }
+      if (normalizeEmail(user.email) !== email) {
+        return sendJson(res, 403, { ok: false, error: "email-mismatch" });
+      }
+
+      const activeRequest = deviceContext.device.resetRequests?.[userId];
+      if (activeRequest?.requestedAt && (Date.now() - Date.parse(activeRequest.requestedAt)) < RESET_RESEND_INTERVAL_MS) {
+        return sendJson(res, 429, { ok: false, error: "reset-wait" });
+      }
+
+      const code = createResetCode();
+      const requestRecord = {
+        email,
+        codeHash: hashResetCode(code, deviceContext.store.secret, deviceContext.deviceId, userId, email),
+        requestedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS).toISOString()
+      };
+
+      if (isEmailDeliveryConfigured()) {
+        await sendResetCodeEmail(email, user.label, code);
+      } else if (!LOCAL_RESET_PREVIEW) {
+        return sendJson(res, 503, { ok: false, error: "email-not-configured" });
+      }
+
+      deviceContext.device.resetRequests[userId] = requestRecord;
+      writeAuthStore(deviceContext.store);
+
+      return sendJson(res, 200, {
+        ok: true,
+        preview: LOCAL_RESET_PREVIEW && !isEmailDeliveryConfigured(),
+        previewCode: LOCAL_RESET_PREVIEW && !isEmailDeliveryConfigured() ? code : null
+      });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
+    }
+  }
+
+  if (url.pathname === "/api/auth/reset-password" && req.method === "POST") {
+    try {
+      const body = await parseJsonBody(req);
+      const userId = normalizeUserId(body.userId);
+      const email = normalizeEmail(body.email);
+      const code = String(body.code || "").trim();
+      const newPassword = String(body.newPassword || "");
+      const deviceContext = getOrCreateDeviceContext(req, body);
+      if (!userId || !deviceContext) {
+        return sendJson(res, 400, { ok: false, error: "invalid-device" });
+      }
+      if (!isValidEmail(email)) {
+        return sendJson(res, 400, { ok: false, error: "invalid-email" });
+      }
+      if (!code) {
+        return sendJson(res, 400, { ok: false, error: "invalid-reset-code" });
+      }
+      if (newPassword.length < 4) {
+        return sendJson(res, 400, { ok: false, error: "password-too-short" });
+      }
+
+      const user = deviceContext.device.users?.[userId];
+      const requestRecord = deviceContext.device.resetRequests?.[userId];
+      if (!user || !requestRecord?.codeHash) {
+        return sendJson(res, 400, { ok: false, error: "reset-not-requested" });
+      }
+      if (normalizeEmail(user.email) !== email || normalizeEmail(requestRecord.email) !== email) {
+        return sendJson(res, 403, { ok: false, error: "email-mismatch" });
+      }
+      if (!requestRecord.expiresAt || Date.parse(requestRecord.expiresAt) < Date.now()) {
+        delete deviceContext.device.resetRequests[userId];
+        writeAuthStore(deviceContext.store);
+        return sendJson(res, 410, { ok: false, error: "reset-expired" });
+      }
+
+      const expectedHash = hashResetCode(code, deviceContext.store.secret, deviceContext.deviceId, userId, email);
+      if (!safeEqual(expectedHash, requestRecord.codeHash)) {
+        return sendJson(res, 403, { ok: false, error: "invalid-reset-code" });
+      }
+
+      deviceContext.device.users[userId] = createPasswordRecord(
+        newPassword,
+        AUTH_USERS[userId] || user,
+        { email: user.email }
+      );
+      delete deviceContext.device.resetRequests[userId];
+      writeAuthStore(deviceContext.store);
+      return sendJson(res, 200, { ok: true });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
     }
   }
 
@@ -381,19 +882,6 @@ server.listen(PORT, "0.0.0.0", () => {
 function scheduleImport(reason) {
   clearTimeout(importTimer);
   importTimer = setTimeout(() => runImport(reason), 900);
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function normalizeUserId(value) {
-  const normalized = normalizeText(value).replace(/[^a-z0-9_-]/g, "");
-  return normalized === "musico" ? "musico" : normalized === "lider" ? "lider" : "";
 }
 
 function runImport(reason) {

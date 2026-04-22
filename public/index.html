@@ -39,6 +39,7 @@
       </label>
 
       <button class="login-submit" type="submit">Entrar</button>
+      <button class="login-link" type="button" data-action="open-reset">Esqueci a senha</button>
       <p class="login-status" id="loginStatus" aria-live="polite"></p>
     </form>
   </section>
@@ -317,21 +318,60 @@
       </div>
 
       <label>
+        <span>E-mail de recuperacao</span>
+        <input id="accountEmail" type="email" autocomplete="email" inputmode="email" placeholder="nome@igreja.com">
+      </label>
+      <label>
         <span>Senha atual</span>
-        <input id="currentPassword" type="password" autocomplete="current-password" required>
+        <input id="currentPassword" type="password" autocomplete="current-password">
       </label>
       <label>
         <span>Nova senha</span>
-        <input id="newPassword" type="password" autocomplete="new-password" minlength="4" required>
+        <input id="newPassword" type="password" autocomplete="new-password" minlength="4">
       </label>
       <label>
         <span>Confirmar nova senha</span>
-        <input id="confirmPassword" type="password" autocomplete="new-password" minlength="4" required>
+        <input id="confirmPassword" type="password" autocomplete="new-password" minlength="4">
       </label>
 
-      <button class="account-save" type="submit">Alterar senha</button>
+      <button class="account-save" type="submit">Salvar dados</button>
       <button class="account-logout" type="button" data-action="logout">Sair</button>
       <p class="account-status" id="accountStatus" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section class="account-modal" id="resetModal" aria-labelledby="resetTitle" hidden>
+    <button class="account-backdrop" type="button" data-action="close-reset" aria-label="Fechar recuperacao"></button>
+    <form class="account-card" id="resetForm">
+      <div class="account-head">
+        <div>
+          <span id="resetRole">Perfil</span>
+          <h2 id="resetTitle">Recuperar senha</h2>
+          <p id="resetDeviceLabel">Codigo por e-mail deste aparelho</p>
+        </div>
+        <button type="button" data-action="close-reset" aria-label="Fechar">Ã—</button>
+      </div>
+
+      <label>
+        <span>E-mail cadastrado</span>
+        <input id="resetEmail" type="email" autocomplete="email" inputmode="email" placeholder="nome@igreja.com" required>
+      </label>
+      <button class="account-save" type="button" data-action="request-reset-code">Enviar codigo</button>
+      <label>
+        <span>Codigo recebido</span>
+        <input id="resetCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+      </label>
+      <label>
+        <span>Nova senha</span>
+        <input id="resetNewPassword" type="password" autocomplete="new-password" minlength="4" required>
+      </label>
+      <label>
+        <span>Confirmar nova senha</span>
+        <input id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="4" required>
+      </label>
+
+      <button class="account-save" type="submit">Redefinir senha</button>
+      <p class="account-status" id="resetStatus" aria-live="polite"></p>
     </form>
   </section>
 

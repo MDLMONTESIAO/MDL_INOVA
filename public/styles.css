@@ -203,6 +203,17 @@ svg {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+.login-link {
+  min-height: 20px;
+  justify-self: center;
+  padding: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, .78);
+  border: 0;
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .login-status,
 .account-status {
   min-height: 18px;

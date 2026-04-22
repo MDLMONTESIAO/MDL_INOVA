@@ -133,6 +133,8 @@ const state = {
   currentSongId: null,
   previousView: "acervo",
   appStarted: false,
+  deviceId: ensureDeviceId(),
+  deviceLabel: getDeviceLabel(),
   auth: readStoredAuth(),
   selectedLoginUser: localStorage.getItem("mdl.lastLoginUser") || "lider",
   currentSheetHtml: "",
@@ -247,9 +249,19 @@ const dom = {
   accountRole: document.getElementById("accountRole"),
   accountName: document.getElementById("accountName"),
   accountStatus: document.getElementById("accountStatus"),
+  accountEmail: document.getElementById("accountEmail"),
   currentPassword: document.getElementById("currentPassword"),
   newPassword: document.getElementById("newPassword"),
   confirmPassword: document.getElementById("confirmPassword"),
+  resetModal: document.getElementById("resetModal"),
+  resetForm: document.getElementById("resetForm"),
+  resetRole: document.getElementById("resetRole"),
+  resetDeviceLabel: document.getElementById("resetDeviceLabel"),
+  resetEmail: document.getElementById("resetEmail"),
+  resetCode: document.getElementById("resetCode"),
+  resetNewPassword: document.getElementById("resetNewPassword"),
+  resetConfirmPassword: document.getElementById("resetConfirmPassword"),
+  resetStatus: document.getElementById("resetStatus"),
   installPrompt: document.getElementById("installPrompt"),
   installPromptText: document.getElementById("installPromptText"),
   installPromptButton: document.getElementById("installPromptButton"),
@@ -310,11 +322,43 @@ async function startAuthenticatedApp() {
 
 function readStoredAuth() {
   try {
-    return JSON.parse(localStorage.getItem("mdl.auth") || "null");
+    const stored = JSON.parse(localStorage.getItem("mdl.auth") || "null");
+    if (!stored?.token || !stored?.user?.id) return null;
+    return stored;
   } catch {
     localStorage.removeItem("mdl.auth");
     return null;
   }
+}
+
+function writeStoredAuth() {
+  if (state.auth?.token && state.auth?.user) {
+    localStorage.setItem("mdl.auth", JSON.stringify(state.auth));
+  } else {
+    localStorage.removeItem("mdl.auth");
+  }
+}
+
+function ensureDeviceId() {
+  const stored = String(localStorage.getItem("mdl.deviceId") || "").trim().toLowerCase();
+  if (/^[a-z0-9_-]{12,80}$/.test(stored)) return stored;
+
+  const nextId = makeDeviceId();
+  localStorage.setItem("mdl.deviceId", nextId);
+  return nextId;
+}
+
+function makeDeviceId() {
+  const random = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
+  return `device_${random}`.slice(0, 80);
+}
+
+function getDeviceLabel() {
+  const platform = navigator.userAgentData?.platform || navigator.platform || "aparelho";
+  const kind = /mobile|android|iphone|ipad/i.test(navigator.userAgent || "") ? "mobile" : "desktop";
+  return `${platform} ${kind}`.trim();
 }
 
 async function restoreSession() {
@@ -327,25 +371,34 @@ async function restoreSession() {
     if (!response.ok) throw new Error("session-expired");
     const data = await response.json();
     state.auth = { token: state.auth.token, user: data.user };
-    localStorage.setItem("mdl.auth", JSON.stringify(state.auth));
+    writeStoredAuth();
     syncAuthUi();
     return true;
   } catch {
     state.auth = null;
-    localStorage.removeItem("mdl.auth");
+    writeStoredAuth();
     syncAuthUi();
     return false;
   }
 }
 
+function deviceHeaders(extra = {}) {
+  return {
+    "X-Device-Id": state.deviceId,
+    ...extra
+  };
+}
+
 function authHeaders(extra = {}) {
   return {
-    ...extra,
+    ...deviceHeaders(extra),
     ...(state.auth?.token ? { Authorization: `Bearer ${state.auth.token}` } : {})
   };
 }
 
 function showLogin(message = "") {
+  closeAccountModal(true);
+  closeResetModal(true);
   if (dom.loginScreen) dom.loginScreen.hidden = false;
   if (dom.appShell) dom.appShell.hidden = true;
   if (dom.loginStatus) dom.loginStatus.textContent = message;
@@ -363,6 +416,7 @@ function selectLoginUser(userId) {
   state.selectedLoginUser = userId;
   localStorage.setItem("mdl.lastLoginUser", userId);
   syncLoginSelection();
+  syncResetUi();
   if (dom.loginStatus) dom.loginStatus.textContent = "";
   dom.loginPassword?.focus();
 }
@@ -387,21 +441,25 @@ async function loginSelectedUser() {
   try {
     const response = await fetch("/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: deviceHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         userId: state.selectedLoginUser,
-        password
+        password,
+        deviceId: state.deviceId,
+        deviceLabel: state.deviceLabel
       })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.token) throw new Error(data.error || "invalid-login");
 
     state.auth = { token: data.token, user: data.user };
-    localStorage.setItem("mdl.auth", JSON.stringify(state.auth));
+    writeStoredAuth();
     localStorage.setItem("mdl.lastLoginUser", state.selectedLoginUser);
     if (dom.loginPassword) dom.loginPassword.value = "";
     await startAuthenticatedApp();
-  } catch {
+  } catch (error) {
+    if (dom.loginStatus) dom.loginStatus.textContent = describeLoginError(error);
+    return;
     if (dom.loginStatus) dom.loginStatus.textContent = "Usuário ou senha inválidos.";
   }
 }
@@ -418,9 +476,14 @@ function syncAuthUi() {
     dom.accountButton.setAttribute("aria-label", `Conta: ${user.label}`);
   }
   if (dom.accountRole) dom.accountRole.textContent = user?.label || "Perfil";
+  if (dom.accountEmail && document.activeElement !== dom.accountEmail) {
+    dom.accountEmail.value = user?.email || "";
+  }
   if (dom.accountName) dom.accountName.textContent = isLeader()
-    ? "Pode editar o Play do ensaio"
-    : "Pode visualizar o Play do ensaio";
+    ? "Pode editar o Play do ensaio neste aparelho"
+    : "Pode visualizar o Play do ensaio neste aparelho";
+
+  syncResetUi();
 
   renderPermissionState();
 }
@@ -429,32 +492,93 @@ function openAccountModal() {
   if (!state.auth?.user || !dom.accountModal) return;
   dom.accountModal.hidden = false;
   if (dom.accountStatus) dom.accountStatus.textContent = "";
-  dom.currentPassword?.focus();
+  if (dom.accountEmail) dom.accountEmail.value = state.auth.user.email || "";
+  (state.auth.user.email ? dom.currentPassword : dom.accountEmail)?.focus();
 }
 
-function closeAccountModal() {
+function closeAccountModal(silent = false) {
   if (!dom.accountModal) return;
   dom.accountModal.hidden = true;
   if (dom.accountForm) dom.accountForm.reset();
-  if (dom.accountStatus) dom.accountStatus.textContent = "";
+  if (!silent && dom.accountStatus) dom.accountStatus.textContent = "";
 }
 
-async function changePassword() {
+function openResetModal() {
+  if (!dom.resetModal) return;
+  syncResetUi();
+  if (dom.resetStatus) dom.resetStatus.textContent = "";
+  dom.resetModal.hidden = false;
+  dom.resetEmail?.focus();
+}
+
+function closeResetModal(silent = false) {
+  if (!dom.resetModal) return;
+  dom.resetModal.hidden = true;
+  if (dom.resetForm) dom.resetForm.reset();
+  if (!silent && dom.resetStatus) dom.resetStatus.textContent = "";
+}
+
+function syncResetUi() {
+  const config = LOGIN_USERS[state.selectedLoginUser] || LOGIN_USERS.lider;
+  if (dom.resetRole) dom.resetRole.textContent = config.label;
+  if (dom.resetDeviceLabel) dom.resetDeviceLabel.textContent = `Recuperacao para ${config.label.toLowerCase()} deste aparelho`;
+}
+
+async function saveAccount() {
+  const email = normalizeEmailInput(dom.accountEmail?.value || "");
   const currentPassword = dom.currentPassword?.value || "";
   const newPassword = dom.newPassword?.value || "";
   const confirmPassword = dom.confirmPassword?.value || "";
+  const emailChanged = email !== normalizeEmailInput(state.auth?.user?.email || "");
+  const wantsPasswordChange = Boolean(currentPassword || newPassword || confirmPassword);
 
-  if (newPassword.length < 4) {
+  if (!emailChanged && !wantsPasswordChange) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "Nada para salvar.";
+    return;
+  }
+  if (email && !isValidEmailInput(email)) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "Digite um e-mail valido.";
+    return;
+  }
+  if (wantsPasswordChange && !currentPassword) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "Digite a senha atual.";
+    return;
+  }
+
+  if (wantsPasswordChange && newPassword.length < 4) {
     if (dom.accountStatus) dom.accountStatus.textContent = "A nova senha precisa ter pelo menos 4 caracteres.";
     return;
   }
-  if (newPassword !== confirmPassword) {
+  if (wantsPasswordChange && newPassword !== confirmPassword) {
     if (dom.accountStatus) dom.accountStatus.textContent = "A confirmação não confere.";
     return;
   }
 
-  if (dom.accountStatus) dom.accountStatus.textContent = "Alterando senha...";
+  if (dom.accountStatus) dom.accountStatus.textContent = "Salvando...";
   try {
+    let updatedUser = state.auth?.user;
+
+    if (emailChanged) {
+      const emailResponse = await fetch("/api/auth/update-email", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ email })
+      });
+      const emailData = await emailResponse.json().catch(() => ({}));
+      if (!emailResponse.ok || !emailData.ok) throw new Error(emailData.error || "update-email-failed");
+      updatedUser = emailData.user || updatedUser;
+    }
+
+    if (!wantsPasswordChange) {
+      state.auth = { ...state.auth, user: updatedUser };
+      writeStoredAuth();
+      syncAuthUi();
+      if (dom.accountForm) dom.accountForm.reset();
+      if (dom.accountEmail) dom.accountEmail.value = updatedUser?.email || "";
+      if (dom.accountStatus) dom.accountStatus.textContent = "E-mail atualizado.";
+      toast("E-mail atualizado");
+      return;
+    }
     const response = await fetch("/api/auth/change-password", {
       method: "POST",
       headers: authHeaders({ "Content-Type": "application/json" }),
@@ -462,23 +586,158 @@ async function changePassword() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.ok) throw new Error(data.error || "change-failed");
+    updatedUser = data.user || updatedUser;
+    state.auth = { ...state.auth, user: updatedUser };
+    writeStoredAuth();
+    syncAuthUi();
     if (dom.accountForm) dom.accountForm.reset();
-    if (dom.accountStatus) dom.accountStatus.textContent = "Senha alterada.";
-    toast("Senha alterada");
-  } catch {
+    if (dom.accountEmail) dom.accountEmail.value = updatedUser?.email || "";
+    if (dom.accountStatus) dom.accountStatus.textContent = "Dados salvos e senha atualizada.";
+    toast("Senha atualizada neste aparelho");
+  } catch (error) {
+    if (dom.accountStatus) dom.accountStatus.textContent = describeAccountError(error);
+    return;
     if (dom.accountStatus) dom.accountStatus.textContent = "Senha atual inválida.";
   }
+}
+
+async function requestResetCode() {
+  const email = normalizeEmailInput(dom.resetEmail?.value || "");
+  if (!isValidEmailInput(email)) {
+    if (dom.resetStatus) dom.resetStatus.textContent = "Digite o e-mail cadastrado.";
+    return;
+  }
+
+  if (dom.resetStatus) dom.resetStatus.textContent = "Enviando codigo...";
+  try {
+    const response = await fetch("/api/auth/request-reset", {
+      method: "POST",
+      headers: deviceHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        userId: state.selectedLoginUser,
+        email,
+        deviceId: state.deviceId,
+        deviceLabel: state.deviceLabel
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "request-reset-failed");
+
+    if (dom.resetStatus) {
+      dom.resetStatus.textContent = data.previewCode
+        ? `Codigo de teste local: ${data.previewCode}`
+        : "Codigo enviado para o e-mail cadastrado.";
+    }
+    dom.resetCode?.focus();
+  } catch (error) {
+    if (dom.resetStatus) dom.resetStatus.textContent = describeResetRequestError(error);
+  }
+}
+
+async function submitResetPassword() {
+  const email = normalizeEmailInput(dom.resetEmail?.value || "");
+  const code = String(dom.resetCode?.value || "").trim();
+  const newPassword = dom.resetNewPassword?.value || "";
+  const confirmPassword = dom.resetConfirmPassword?.value || "";
+
+  if (!isValidEmailInput(email)) {
+    if (dom.resetStatus) dom.resetStatus.textContent = "Digite o e-mail cadastrado.";
+    return;
+  }
+  if (!code) {
+    if (dom.resetStatus) dom.resetStatus.textContent = "Digite o codigo recebido.";
+    return;
+  }
+  if (newPassword.length < 4) {
+    if (dom.resetStatus) dom.resetStatus.textContent = "A nova senha precisa ter pelo menos 4 caracteres.";
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    if (dom.resetStatus) dom.resetStatus.textContent = "A confirmacao nao confere.";
+    return;
+  }
+
+  if (dom.resetStatus) dom.resetStatus.textContent = "Redefinindo senha...";
+  try {
+    const response = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: deviceHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        userId: state.selectedLoginUser,
+        email,
+        code,
+        newPassword,
+        deviceId: state.deviceId,
+        deviceLabel: state.deviceLabel
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "reset-password-failed");
+
+    closeResetModal(true);
+    if (dom.loginPassword) dom.loginPassword.value = "";
+    if (dom.loginStatus) dom.loginStatus.textContent = "Senha redefinida. Entre com a nova senha.";
+    toast("Senha redefinida neste aparelho");
+  } catch (error) {
+    if (dom.resetStatus) dom.resetStatus.textContent = describeResetConfirmError(error);
+  }
+}
+
+function normalizeEmailInput(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmailInput(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmailInput(value));
+}
+
+function describeLoginError(error) {
+  const code = error?.message || "";
+  if (code === "invalid-device") return "Nao foi possivel identificar este aparelho.";
+  return "Usuario ou senha invalidos.";
+}
+
+function describeAccountError(error) {
+  const code = error?.message || "";
+  if (code === "invalid-email") return "Digite um e-mail valido.";
+  if (code === "invalid-current-password") return "Senha atual invalida.";
+  if (code === "password-too-short") return "A nova senha precisa ter pelo menos 4 caracteres.";
+  return "Nao foi possivel salvar agora.";
+}
+
+function describeResetRequestError(error) {
+  const code = error?.message || "";
+  if (code === "invalid-email") return "Digite o e-mail cadastrado.";
+  if (code === "email-not-registered") return "Este perfil ainda nao tem e-mail cadastrado neste aparelho.";
+  if (code === "email-mismatch") return "O e-mail nao confere com este aparelho.";
+  if (code === "reset-wait") return "Aguarde um minuto para pedir outro codigo.";
+  if (code === "email-not-configured") return "O envio por e-mail ainda precisa ser configurado no servidor.";
+  if (code === "invalid-device") return "Nao foi possivel identificar este aparelho.";
+  return "Nao foi possivel enviar o codigo agora.";
+}
+
+function describeResetConfirmError(error) {
+  const code = error?.message || "";
+  if (code === "invalid-email") return "Digite o e-mail cadastrado.";
+  if (code === "invalid-reset-code") return "Codigo invalido.";
+  if (code === "reset-not-requested") return "Peca um codigo antes de redefinir.";
+  if (code === "reset-expired") return "O codigo expirou. Peca outro.";
+  if (code === "email-mismatch") return "O e-mail nao confere com este aparelho.";
+  if (code === "password-too-short") return "A nova senha precisa ter pelo menos 4 caracteres.";
+  if (code === "invalid-device") return "Nao foi possivel identificar este aparelho.";
+  return "Nao foi possivel redefinir a senha agora.";
 }
 
 function logout() {
   stopAutoScroll();
   stopTuner(true);
   closeChordGuide(true);
-  closeAccountModal();
+  closeAccountModal(true);
+  closeResetModal(true);
   state.auth = null;
-  localStorage.removeItem("mdl.auth");
+  writeStoredAuth();
   syncAuthUi();
-  showLogin("Sessão encerrada.");
+  showLogin("Sessao encerrada.");
 }
 
 function isLeader() {
@@ -547,7 +806,11 @@ function bindEvents() {
   });
   dom.accountForm?.addEventListener("submit", (event) => {
     event.preventDefault();
-    changePassword();
+    saveAccount();
+  });
+  dom.resetForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submitResetPassword();
   });
   dom.search?.addEventListener("input", () => {
     filterSongs();
@@ -584,6 +847,9 @@ function handleClick(event) {
     if (action === "select-login-user") return selectLoginUser(button.dataset.userId);
     if (action === "open-account") return openAccountModal();
     if (action === "close-account") return closeAccountModal();
+    if (action === "open-reset") return openResetModal();
+    if (action === "close-reset") return closeResetModal();
+    if (action === "request-reset-code") return requestResetCode();
     if (action === "logout") return logout();
     if (action === "open") return openSong(id);
     if (action === "add-play") return requireLeader() && addToPlay(id);
@@ -633,6 +899,11 @@ function handleKeyDown(event) {
 
   if (event.key === "Escape" && dom.accountModal && !dom.accountModal.hidden) {
     closeAccountModal();
+    return;
+  }
+
+  if (event.key === "Escape" && dom.resetModal && !dom.resetModal.hidden) {
+    closeResetModal();
   }
 }
 
@@ -755,7 +1026,7 @@ function renderArtistCard(artist, songs) {
 
 function renderArtistSongs(artist) {
   dom.search.value = artist;
-  state.filtered = getArtistSongs(artist).slice(0, 120);
+  state.filtered = getArtistSongs(artist);
   showView("acervo");
   renderCatalog();
 }
