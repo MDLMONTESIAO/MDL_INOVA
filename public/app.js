@@ -1148,19 +1148,27 @@ function getVisibleCollection(collection) {
 
 function renderWorshipSong(entry, song, index) {
   const key = entry.key || song.key || "Tom";
+  const media = getSongMedia(song.id);
+  const cover = media?.cover;
+  const hasAudio = Boolean(media?.audioBlob);
   const offlineBadge = state.offlineSongs.has(song.id) ? `<span class="offline-badge">offline</span>` : "";
+  const localAudioBadge = hasAudio ? `<span class="local-audio-badge">MP3</span>` : "";
   const removeButton = state.playEditing && isLeader()
     ? `<button class="worship-remove" type="button" data-action="remove-play" data-id="${escapeAttr(song.id)}" title="Remover cifra">×</button>`
     : "";
 
   return `
     <article class="worship-song">
+      <span class="worship-cover">
+        ${cover ? `<img src="${escapeAttr(cover)}" alt="">` : `<span>${escapeHtml(song.key || getInitials(song.title))}</span>`}
+      </span>
       <span class="worship-index">${index + 1}</span>
       <button class="worship-song-main" type="button" data-action="open" data-id="${escapeAttr(song.id)}">
         <strong>${escapeHtml(song.title)}</strong>
         <span>${escapeHtml(song.artist)}</span>
       </button>
       ${offlineBadge}
+      ${localAudioBadge}
       <span class="tone-pill">${escapeHtml(key)}</span>
       ${removeButton}
     </article>

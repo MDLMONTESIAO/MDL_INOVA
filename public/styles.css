@@ -2666,3 +2666,289 @@ body.screen-reader .screen-footer {
     min-height: calc(100vh - 48px);
   }
 }
+
+/* Neon worship play refresh */
+body.screen-play {
+  background:
+    linear-gradient(135deg, #070711 0%, #111024 48%, #070711 100%);
+}
+
+body.screen-play .app-shell {
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, .2), rgba(77, 230, 255, .08) 44%, rgba(7, 7, 17, .98)),
+    var(--neon-bg);
+}
+
+body.screen-play .main-area {
+  background: transparent;
+}
+
+#view-play.worship-view.active {
+  min-height: 100vh;
+  padding: 0;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, .16), rgba(77, 230, 255, .07) 42%, rgba(7, 7, 17, .94)),
+    var(--neon-bg);
+}
+
+#view-play .worship-hero {
+  min-height: 280px;
+  padding: 28px 18px 18px;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, .36), rgba(77, 230, 255, .16) 52%, rgba(7, 7, 17, .92)),
+    #111024;
+  border-bottom: 1px solid var(--neon-line);
+  color: var(--neon-text);
+  gap: 18px;
+}
+
+#view-play .worship-nav .reader-round {
+  background: rgba(255, 255, 255, .1);
+  color: var(--neon-text);
+  border: 1px solid rgba(255, 255, 255, .15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+#view-play .worship-brand {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .11);
+  border-radius: 8px;
+  background: rgba(8, 8, 20, .44);
+}
+
+#view-play .mini-logo {
+  box-shadow: 0 0 24px rgba(168, 85, 247, .36);
+}
+
+#view-play .worship-brand strong,
+#view-play .worship-title h2 {
+  color: var(--neon-text);
+}
+
+#view-play .worship-brand span,
+#view-play .worship-title p span {
+  color: var(--neon-muted);
+}
+
+#view-play .worship-title {
+  align-items: center;
+}
+
+#view-play .worship-title h2 {
+  font-size: 34px;
+  line-height: 1;
+}
+
+#view-play .worship-title p {
+  min-width: 92px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .08);
+  color: var(--neon-text);
+  text-align: center;
+}
+
+#view-play .worship-title p strong {
+  display: block;
+  color: var(--neon-amber);
+  font-size: 28px;
+  line-height: 1;
+}
+
+#view-play .worship-progress {
+  height: 9px;
+  background: rgba(255, 255, 255, .12);
+}
+
+#view-play .worship-progress span {
+  background: linear-gradient(90deg, #ffd05a, #ff9515);
+  box-shadow: 0 0 24px rgba(255, 173, 31, .44);
+}
+
+#view-play .worship-actions {
+  gap: 10px;
+}
+
+#view-play .worship-actions button {
+  background: rgba(255, 255, 255, .1);
+  color: var(--neon-text);
+  border: 1px solid rgba(255, 255, 255, .15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+#view-play .worship-actions button:first-child {
+  background: linear-gradient(135deg, #ffd05a, #ff9515);
+  color: #140f06;
+}
+
+#view-play .worship-list {
+  padding: 16px 14px 24px;
+  gap: 12px;
+}
+
+#view-play .worship-list .empty-state {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03)),
+    rgba(18, 16, 36, .82);
+  border-color: var(--neon-line);
+  color: var(--neon-muted);
+}
+
+#view-play .worship-song {
+  min-height: 74px;
+  grid-template-columns: 50px 32px minmax(0, 1fr) auto auto auto;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--neon-line);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .032)),
+    rgba(18, 16, 36, .86);
+  color: var(--neon-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 34px rgba(0, 0, 0, .22);
+  backdrop-filter: blur(18px);
+}
+
+#view-play .worship-cover {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, .86), rgba(77, 230, 255, .56)),
+    #17142a;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+#view-play .worship-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#view-play .worship-index {
+  background: rgba(255, 255, 255, .08);
+  color: var(--neon-muted);
+}
+
+#view-play .worship-song-main {
+  color: var(--neon-text);
+}
+
+#view-play .worship-song-main strong {
+  color: var(--neon-text);
+}
+
+#view-play .worship-song-main span {
+  color: var(--neon-muted);
+}
+
+#view-play .tone-pill,
+#view-play .offline-badge,
+#view-play .local-audio-badge {
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+#view-play .tone-pill {
+  background: rgba(255, 173, 31, .15);
+  color: #ffd05a;
+  border: 1px solid rgba(255, 173, 31, .22);
+}
+
+#view-play .offline-badge {
+  background: rgba(111, 235, 168, .13);
+  color: #b8ffd7;
+  border: 1px solid rgba(111, 235, 168, .2);
+}
+
+#view-play .local-audio-badge {
+  background: rgba(77, 230, 255, .14);
+  color: #d6fbff;
+  border: 1px solid rgba(77, 230, 255, .22);
+}
+
+#view-play .worship-remove {
+  background: rgba(239, 141, 162, .14);
+  color: #ffd0da;
+  border: 1px solid rgba(239, 141, 162, .22);
+}
+
+body.screen-play .screen-footer {
+  background: #070711;
+  color: rgba(247, 245, 255, .42);
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+@media (max-width: 520px) {
+  #view-play .worship-song {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+
+  #view-play .worship-index {
+    display: none;
+  }
+
+  #view-play .offline-badge,
+  #view-play .local-audio-badge {
+    display: none;
+  }
+}
+
+@media (min-width: 760px) {
+  #view-play.worship-view.active {
+    padding: 22px;
+  }
+
+  #view-play .worship-hero,
+  #view-play .worship-list {
+    width: min(100%, 940px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #view-play .worship-hero {
+    min-height: 248px;
+    border: 1px solid var(--neon-line);
+    border-radius: 8px;
+    padding: 22px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 18px 46px rgba(0, 0, 0, .28);
+  }
+
+  #view-play .worship-list {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (min-width: 960px) {
+  body.screen-play {
+    padding: 24px;
+  }
+
+  body.screen-play .app-shell {
+    width: min(100%, 1180px);
+    max-width: 1180px;
+    min-height: calc(100vh - 48px);
+    display: block;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  body.screen-play .main-area {
+    min-height: calc(100vh - 48px);
+  }
+
+  #view-play.worship-view.active {
+    min-height: calc(100vh - 48px);
+  }
+}
