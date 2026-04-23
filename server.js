@@ -66,8 +66,16 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function getCatalogDbPath() {
+  return fs.existsSync(DB_PATH) ? DB_PATH : FALLBACK_DB_PATH;
+}
+
+function getCatalogIndexPath() {
+  return fs.existsSync(INDEX_PATH) ? INDEX_PATH : FALLBACK_INDEX_PATH;
+}
+
 function readCatalogDb() {
-  const dbPath = fs.existsSync(DB_PATH) ? DB_PATH : FALLBACK_DB_PATH;
+  const dbPath = getCatalogDbPath();
   if (!fs.existsSync(dbPath)) return null;
   return JSON.parse(fs.readFileSync(dbPath, "utf8"));
 }
@@ -118,6 +126,38 @@ function writeArtistThumbs(artistThumbs) {
     updatedAt: new Date().toISOString(),
     artistThumbs
   }, null, 2), "utf8");
+}
+
+function syncArtistThumbToCatalogFiles(artist, urlPath) {
+  const artistName = normalizeArtistName(artist);
+  const sanitizedUrl = sanitizeArtistThumbUrl(urlPath);
+  if (!artistName || !sanitizedUrl) return;
+
+  const filePaths = Array.from(new Set([getCatalogDbPath(), getCatalogIndexPath()]))
+    .filter((filePath) => fs.existsSync(filePath));
+  const artistKey = normalizeText(artistName);
+  const syncedAt = new Date().toISOString();
+
+  for (const filePath of filePaths) {
+    const catalog = safeJsonParse(fs.readFileSync(filePath, "utf8"), null);
+    if (!catalog || typeof catalog !== "object") continue;
+
+    const artistThumbs = normalizeArtistThumbs(catalog.artistThumbs);
+    const existingArtist = Object.keys(artistThumbs)
+      .find((candidate) => normalizeText(candidate) === artistKey);
+    artistThumbs[existingArtist || artistName] = sanitizedUrl;
+    catalog.artistThumbs = artistThumbs;
+    catalog.artistThumbsUpdatedAt = syncedAt;
+
+    if (Array.isArray(catalog.songs)) {
+      catalog.songs = catalog.songs.map((song) => {
+        if (normalizeText(song?.artist) !== artistKey) return song;
+        return { ...song, artistThumb: sanitizedUrl };
+      });
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(catalog, null, 2), "utf8");
+  }
 }
 
 function getArtistThumbFor(artist, artistThumbs) {
@@ -912,6 +952,7 @@ const server = http.createServer(async (req, res) => {
       const urlPath = `/artist-thumbs/${fileName}?v=${Date.now()}`;
       artistThumbs[artist] = urlPath;
       writeArtistThumbs(artistThumbs);
+      syncArtistThumbToCatalogFiles(artist, urlPath);
 
       return sendJson(res, 200, {
         ok: true,
@@ -926,7 +967,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.url === "/api/status") {
-    const statusPath = fs.existsSync(INDEX_PATH) ? INDEX_PATH : FALLBACK_INDEX_PATH;
+    const statusPath = getCatalogIndexPath();
     if (!fs.existsSync(statusPath)) {
       return sendJson(res, 200, { ready: false, songs: 0, message: "index-not-found" });
     }
@@ -967,6 +1008,7 @@ const server = http.createServer(async (req, res) => {
         ready: true,
         name: db.name,
         generatedAt: db.generatedAt,
+        artistThumbsUpdatedAt: db.artistThumbsUpdatedAt || null,
         totalSongs: db.totalSongs,
         totalArtists: db.totalArtists,
         artists: db.artists || [],

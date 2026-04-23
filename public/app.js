@@ -1390,6 +1390,16 @@ function getPublicArtistThumbByNormalizedName(artist) {
   return match?.[1] || "";
 }
 
+function getLibraryRefreshSignature() {
+  const artistThumbSnapshot = Array.from(state.publicArtistThumbs.entries())
+    .sort(([left], [right]) => left.localeCompare(right, "pt-BR"));
+  return JSON.stringify({
+    generatedAt: state.generatedAt || "",
+    songs: state.songs.length,
+    artistThumbs: artistThumbSnapshot
+  });
+}
+
 function normalizeArtistName(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
@@ -1472,6 +1482,10 @@ async function handleArtistThumbSelected(event) {
   });
 
   const uploaded = isLeader() ? await uploadArtistThumb(artistName, dataUrl) : null;
+  if (uploaded) {
+    state.artistThumbs.delete(artistName);
+    await idbDeleteMedia(makeMediaKey("artist-thumb", artistName)).catch(() => {});
+  }
   renderDashboard();
   renderCatalog();
   renderFavorites();
@@ -1623,9 +1637,9 @@ async function refreshLibrary() {
 
 async function autoRefreshLibrary() {
   if (state.currentView === "reader") return;
-  const before = state.songs.length;
+  const before = getLibraryRefreshSignature();
   await loadSongs();
-  if (state.songs.length !== before) {
+  if (getLibraryRefreshSignature() !== before) {
     filterSongs();
     renderAll();
   }
@@ -2383,6 +2397,13 @@ async function idbPutMedia(record) {
   if (!record?.key) return;
   const db = await openOfflineDb();
   await idbRequest(db.transaction("media", "readwrite").objectStore("media").put(record));
+  db.close();
+}
+
+async function idbDeleteMedia(key) {
+  if (!key) return;
+  const db = await openOfflineDb();
+  await idbRequest(db.transaction("media", "readwrite").objectStore("media").delete(key));
   db.close();
 }
 
