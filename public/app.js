@@ -8,15 +8,15 @@ const STRING_LABELS = ["E", "A", "D", "G", "B", "e"];
 const CHORD_FAMILY_META = {
   major: { label: "Maior", intervals: [0, 4, 7], lookup: "", shapeFamily: "major" },
   minor: { label: "Menor", intervals: [0, 3, 7], lookup: "m", shapeFamily: "minor" },
-  "7": { label: "Sétima", intervals: [0, 4, 7, 10], lookup: "7", shapeFamily: "7" },
-  maj7: { label: "Sétima maior", intervals: [0, 4, 7, 11], lookup: "maj7", shapeFamily: "maj7" },
-  m7: { label: "Menor com sétima", intervals: [0, 3, 7, 10], lookup: "m7", shapeFamily: "m7" },
+  "7": { label: "S\u00E9tima", intervals: [0, 4, 7, 10], lookup: "7", shapeFamily: "7" },
+  maj7: { label: "S\u00E9tima maior", intervals: [0, 4, 7, 11], lookup: "maj7", shapeFamily: "maj7" },
+  m7: { label: "Menor com s\u00E9tima", intervals: [0, 3, 7, 10], lookup: "m7", shapeFamily: "m7" },
   sus2: { label: "Suspenso 2", intervals: [0, 2, 7], lookup: "sus2", shapeFamily: "major", approximate: true },
   sus4: { label: "Suspenso 4", intervals: [0, 5, 7], lookup: "sus4", shapeFamily: "sus4" },
-  "7sus4": { label: "Sétima com quarta", intervals: [0, 5, 7, 10], lookup: "7sus4", shapeFamily: "7sus4" },
+  "7sus4": { label: "S\u00E9tima com quarta", intervals: [0, 5, 7, 10], lookup: "7sus4", shapeFamily: "7sus4" },
   add9: { label: "Com nona", intervals: [0, 4, 7, 2], lookup: "add9", shapeFamily: "major", approximate: true },
   madd9: { label: "Menor com nona", intervals: [0, 3, 7, 2], lookup: "madd9", shapeFamily: "minor", approximate: true },
-  "9": { label: "Sétima com nona", intervals: [0, 4, 7, 10, 2], lookup: "9", shapeFamily: "7", approximate: true },
+  "9": { label: "S\u00E9tima com nona", intervals: [0, 4, 7, 10, 2], lookup: "9", shapeFamily: "7", approximate: true },
   m9: { label: "Menor com nona", intervals: [0, 3, 7, 10, 2], lookup: "m9", shapeFamily: "m7", approximate: true },
   power: { label: "Power chord", intervals: [0, 7], lookup: "5", shapeFamily: "power" },
   dim: { label: "Diminuto", intervals: [0, 3, 6], lookup: "dim", shapeFamily: null },
@@ -78,32 +78,32 @@ const CHORD_SHAPE_LIBRARY = {
 const CUSTOM_MAJOR_BASS_SHAPE_KEYS = ["C/E", "D/F#", "E/G#", "A/C#"];
 const MOVABLE_CHORD_SHAPES = {
   major: {
-    lowE: { template: [0, 2, 2, 1, 0, 0], label: "Forma móvel de E" },
-    a: { template: ["x", 0, 2, 2, 2, 0], label: "Forma móvel de A" }
+    lowE: { template: [0, 2, 2, 1, 0, 0], label: "Forma m\u00F3vel de E" },
+    a: { template: ["x", 0, 2, 2, 2, 0], label: "Forma m\u00F3vel de A" }
   },
   minor: {
-    lowE: { template: [0, 2, 2, 0, 0, 0], label: "Forma móvel de Em" },
-    a: { template: ["x", 0, 2, 2, 1, 0], label: "Forma móvel de Am" }
+    lowE: { template: [0, 2, 2, 0, 0, 0], label: "Forma m\u00F3vel de Em" },
+    a: { template: ["x", 0, 2, 2, 1, 0], label: "Forma m\u00F3vel de Am" }
   },
   "7": {
-    lowE: { template: [0, 2, 0, 1, 0, 0], label: "Forma móvel de E7" },
-    a: { template: ["x", 0, 2, 0, 2, 0], label: "Forma móvel de A7" }
+    lowE: { template: [0, 2, 0, 1, 0, 0], label: "Forma m\u00F3vel de E7" },
+    a: { template: ["x", 0, 2, 0, 2, 0], label: "Forma m\u00F3vel de A7" }
   },
   maj7: {
-    lowE: { template: [0, 2, 1, 1, 0, 0], label: "Forma móvel de E7M" },
-    a: { template: ["x", 0, 2, 1, 2, 0], label: "Forma móvel de A7M" }
+    lowE: { template: [0, 2, 1, 1, 0, 0], label: "Forma m\u00F3vel de E7M" },
+    a: { template: ["x", 0, 2, 1, 2, 0], label: "Forma m\u00F3vel de A7M" }
   },
   m7: {
-    lowE: { template: [0, 2, 0, 0, 0, 0], label: "Forma móvel de Em7" },
-    a: { template: ["x", 0, 2, 0, 1, 0], label: "Forma móvel de Am7" }
+    lowE: { template: [0, 2, 0, 0, 0, 0], label: "Forma m\u00F3vel de Em7" },
+    a: { template: ["x", 0, 2, 0, 1, 0], label: "Forma m\u00F3vel de Am7" }
   },
   sus4: {
-    lowE: { template: [0, 2, 2, 2, 0, 0], label: "Forma móvel de Esus4" },
-    a: { template: ["x", 0, 2, 2, 3, 0], label: "Forma móvel de Asus4" }
+    lowE: { template: [0, 2, 2, 2, 0, 0], label: "Forma m\u00F3vel de Esus4" },
+    a: { template: ["x", 0, 2, 2, 3, 0], label: "Forma m\u00F3vel de Asus4" }
   },
   "7sus4": {
-    lowE: { template: [0, 2, 0, 2, 0, 0], label: "Forma móvel de E7sus4" },
-    a: { template: ["x", 0, 2, 0, 3, 0], label: "Forma móvel de A7sus4" }
+    lowE: { template: [0, 2, 0, 2, 0, 0], label: "Forma m\u00F3vel de E7sus4" },
+    a: { template: ["x", 0, 2, 0, 3, 0], label: "Forma m\u00F3vel de A7sus4" }
   },
   power: {
     lowE: { template: [0, 2, 2, "x", "x", "x"], label: "Power chord" },
@@ -122,8 +122,8 @@ const TUNER_MAX_FREQUENCY = 1200;
 const TUNER_SILENCE_RMS = 0.012;
 const TUNER_UPDATE_INTERVAL_MS = 80;
 const LOGIN_USERS = {
-  lider: { label: "Líder", role: "leader", initial: "L" },
-  musico: { label: "Músico", role: "musician", initial: "M" }
+  lider: { label: "Lider", role: "leader", initial: "L" },
+  musico: { label: "Musico", role: "musician", initial: "M" }
 };
 let deferredInstallPrompt = null;
 let installPromptAutoHideTimer = null;
@@ -137,6 +137,7 @@ const state = {
   appStarted: false,
   deviceId: ensureDeviceId(),
   deviceLabel: getDeviceLabel(),
+  deviceUsers: {},
   auth: readStoredAuth(),
   selectedLoginUser: localStorage.getItem("mdl.lastLoginUser") || "lider",
   currentSheetHtml: "",
@@ -146,6 +147,7 @@ const state = {
   chordGuideOpen: false,
   theme: localStorage.getItem("mdl.theme") || "light",
   generatedAt: null,
+  catalogReady: false,
   playEditing: false,
   autoScrollTimer: null,
   singerMode: localStorage.getItem("mdl.singerMode") === "true",
@@ -167,15 +169,30 @@ const state = {
   pendingCoverSongId: null,
   pendingAudioSongId: null,
   pendingArtistThumb: null,
+  pendingAccountAvatar: null,
   readerFont: Number(localStorage.getItem("mdl.readerFont") || 14),
   favorites: new Set(JSON.parse(localStorage.getItem("mdl.favorites") || "[]")),
-  play: migratePlay(JSON.parse(localStorage.getItem("mdl.playEnsaio") || "[]"))
+  playUpdatedAt: localStorage.getItem("mdl.playEnsaioUpdatedAt") || "",
+  playDirty: localStorage.getItem("mdl.playEnsaioDirty") === "true",
+  play: normalizePlayEntries(JSON.parse(localStorage.getItem("mdl.playEnsaio") || "[]"), null),
+  devMode: false,
+  devToken: sessionStorage.getItem("mdl.devToken") || "",
+  devTapCount: 0,
+  devTapTimer: null,
+  devCurrentSongId: null,
+  devPreviewTranspose: 0,
+  devPreviewSingerMode: false,
+  devChordName: "C",
+  devChordFrets: ["x", 3, 2, 0, 1, 0],
+  devChordBaseFret: 1,
+  devChordBarres: [],
+  customChordShapes: {}
 };
 
 const sampleSongs = [
-  { id: "sample-a-casa-e-sua", title: "A Casa É Sua", artist: "Julliany Souza", collection: "Exemplo", fileType: "html", key: "C" },
+  { id: "sample-a-casa-e-sua", title: "A Casa \u00C9 Sua", artist: "Julliany Souza", collection: "Exemplo", fileType: "html", key: "C" },
   { id: "sample-me-atraiu", title: "Me Atraiu", artist: "Gabriela Rocha", collection: "Exemplo", fileType: "html", key: "D" },
-  { id: "sample-consagracao", title: "Consagração", artist: "Aline Barros", collection: "Exemplo", fileType: "html", key: "A" }
+  { id: "sample-consagracao", title: "Consagra\u00E7\u00E3o", artist: "Aline Barros", collection: "Exemplo", fileType: "html", key: "A" }
 ];
 
 const sampleSheets = {
@@ -200,7 +217,7 @@ Para leitura no celular`,
 <i>D</i>         <i>A/C#</i>
 Separada para o ensaio
 <i>Bm7</i>       <i>G</i>
-Com botões grandes`,
+Com bot\u00F5es grandes`,
   "sample-consagracao": `<span class="part">Tom</span>
 <i>A</i>
 
@@ -216,16 +233,25 @@ const dom = {
   loginForm: document.getElementById("loginForm"),
   loginPassword: document.getElementById("loginPassword"),
   loginStatus: document.getElementById("loginStatus"),
+  loginAvatarImage: document.getElementById("loginAvatarImage"),
+  loginAvatarInitial: document.getElementById("loginAvatarInitial"),
+  loginProfileName: document.getElementById("loginProfileName"),
+  loginProfileRole: document.getElementById("loginProfileRole"),
   appShell: document.getElementById("appShell"),
   search: document.getElementById("searchInput"),
   topArtistStack: document.getElementById("topArtistStack"),
   dashboardPlaySummary: document.getElementById("dashboardPlaySummary"),
+  sidebarPlaySummary: document.getElementById("sidebarPlaySummary"),
   dashboardSongCount: document.getElementById("dashboardSongCount"),
   dashboardArtistCount: document.getElementById("dashboardArtistCount"),
   dashboardAudioCount: document.getElementById("dashboardAudioCount"),
   dashboardFavoriteCount: document.getElementById("dashboardFavoriteCount"),
   dashboardPlayCount: document.getElementById("dashboardPlayCount"),
   dashboardArtistShortcutCount: document.getElementById("dashboardArtistShortcutCount"),
+  dashboardTimer: document.getElementById("dashboardTimer"),
+  sidebarTimer: document.getElementById("sidebarTimer"),
+  heroProgressBar: document.getElementById("heroProgressBar"),
+  heroProgressLabel: document.getElementById("heroProgressLabel"),
   libraryStats: document.getElementById("libraryStats"),
   favoriteStats: document.getElementById("favoriteStats"),
   playStats: document.getElementById("playStats"),
@@ -268,12 +294,23 @@ const dom = {
   themeToggleButton: document.getElementById("themeToggleButton"),
   themeToggleIcon: document.getElementById("themeToggleIcon"),
   accountButton: document.getElementById("accountButton"),
+  headerAvatarImage: document.getElementById("headerAvatarImage"),
   accountInitial: document.getElementById("accountInitial"),
+  headerProfileName: document.getElementById("headerProfileName"),
+  headerProfileRole: document.getElementById("headerProfileRole"),
+  sidebarAvatarImage: document.getElementById("sidebarAvatarImage"),
+  sidebarAvatarInitial: document.getElementById("sidebarAvatarInitial"),
+  sidebarProfileName: document.getElementById("sidebarProfileName"),
+  sidebarProfileRole: document.getElementById("sidebarProfileRole"),
   accountModal: document.getElementById("accountModal"),
   accountForm: document.getElementById("accountForm"),
   accountRole: document.getElementById("accountRole"),
   accountName: document.getElementById("accountName"),
   accountStatus: document.getElementById("accountStatus"),
+  accountAvatarInput: document.getElementById("accountAvatarInput"),
+  accountAvatarImage: document.getElementById("accountAvatarImage"),
+  accountAvatarInitial: document.getElementById("accountAvatarInitial"),
+  accountDisplayName: document.getElementById("accountDisplayName"),
   accountEmail: document.getElementById("accountEmail"),
   currentPassword: document.getElementById("currentPassword"),
   newPassword: document.getElementById("newPassword"),
@@ -291,6 +328,27 @@ const dom = {
   installPromptText: document.getElementById("installPromptText"),
   installPromptButton: document.getElementById("installPromptButton"),
   readerFavoriteButton: document.getElementById("readerFavoriteButton"),
+  devSongSearch: document.getElementById("devSongSearch"),
+  devSongList: document.getElementById("devSongList"),
+  devSongTitle: document.getElementById("devSongTitle"),
+  devSongArtist: document.getElementById("devSongArtist"),
+  devSongKey: document.getElementById("devSongKey"),
+  devSongCollection: document.getElementById("devSongCollection"),
+  devSongHtml: document.getElementById("devSongHtml"),
+  devSongStatus: document.getElementById("devSongStatus"),
+  devPreviewTitle: document.getElementById("devPreviewTitle"),
+  devChordPreview: document.getElementById("devChordPreview"),
+  devChordSearch: document.getElementById("devChordSearch"),
+  devChordList: document.getElementById("devChordList"),
+  devChordNameInput: document.getElementById("devChordName"),
+  devChordNotes: document.getElementById("devChordNotes"),
+  devChordBaseFret: document.getElementById("devChordBaseFret"),
+  devChordBarre: document.getElementById("devChordBarre"),
+  devChordGrid: document.getElementById("devChordGrid"),
+  devChordStringModes: document.getElementById("devChordStringModes"),
+  devChordStatus: document.getElementById("devChordStatus"),
+  devChordPreviewName: document.getElementById("devChordPreviewName"),
+  devChordPreviewDiagram: document.getElementById("devChordPreviewDiagram"),
   adminSongCount: document.getElementById("adminSongCount"),
   adminArtistCount: document.getElementById("adminArtistCount"),
   adminUpdatedAt: document.getElementById("adminUpdatedAt")
@@ -302,6 +360,7 @@ async function init() {
   registerServiceWorker();
   initTheme();
   bindEvents();
+  await loadDeviceUsers();
   syncLoginSelection();
   syncAuthUi();
 
@@ -314,17 +373,19 @@ async function init() {
 }
 
 async function startAuthenticatedApp() {
+  showAuthenticatedApp();
   if (state.appStarted) {
-    showAuthenticatedApp();
+    await loadSongs();
+    await syncSharedPlay({ allowLeaderSeed: true, silent: true });
+    filterSongs();
     renderAll();
     return;
   }
 
   state.appStarted = true;
-  showAuthenticatedApp();
   initInstallPrompt();
-  savePlay();
   await loadSongs();
+  await syncSharedPlay({ allowLeaderSeed: true, silent: true });
   await refreshOfflineSongIds();
   await loadLocalMedia();
   applyPreviewState();
@@ -396,6 +457,7 @@ async function restoreSession() {
     });
     if (!response.ok) throw new Error("session-expired");
     const data = await response.json();
+    rememberDeviceUser(data.user);
     state.auth = { token: state.auth.token, user: data.user };
     writeStoredAuth();
     syncAuthUi();
@@ -422,12 +484,31 @@ function authHeaders(extra = {}) {
   };
 }
 
+async function loadDeviceUsers() {
+  try {
+    const response = await fetch("/api/auth/device-users", {
+      headers: deviceHeaders()
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.users) throw new Error("device-users-unavailable");
+    state.deviceUsers = data.users || {};
+  } catch {
+    state.deviceUsers = state.deviceUsers || {};
+  }
+}
+
+function rememberDeviceUser(user) {
+  if (!user?.id) return;
+  state.deviceUsers[user.id] = user;
+}
+
 function showLogin(message = "") {
   closeAccountModal(true);
   closeResetModal(true);
   if (dom.loginScreen) dom.loginScreen.hidden = false;
   if (dom.appShell) dom.appShell.hidden = true;
   if (dom.loginStatus) dom.loginStatus.textContent = message;
+  syncLoginProfile();
   setTimeout(() => dom.loginPassword?.focus(), 50);
 }
 
@@ -454,6 +535,57 @@ function syncLoginSelection() {
     button.classList.toggle("active", selected);
     button.setAttribute("aria-pressed", String(selected));
   });
+  syncLoginProfile();
+}
+
+function getRoleLabel(user) {
+  if (state.devMode) return "Desenvolvedor";
+  if (user?.role === "leader") return "Lider";
+  if (user?.role === "musician") return "Musico";
+  return "Membro";
+}
+
+function getDeviceUser(userId) {
+  return state.deviceUsers?.[userId] || null;
+}
+
+function getUserDisplayName(user, fallbackId = state.selectedLoginUser) {
+  const source = user || getDeviceUser(fallbackId) || null;
+  const value = String(source?.displayName || source?.name || "").trim();
+  if (value) return value;
+  return LOGIN_USERS[fallbackId]?.label || "Perfil";
+}
+
+function getUserAvatar(user, fallbackId = state.selectedLoginUser) {
+  const source = user || getDeviceUser(fallbackId) || null;
+  return String(source?.avatarUrl || source?.avatar || "").trim();
+}
+
+function getUserInitial(user, fallbackId = state.selectedLoginUser) {
+  const name = getUserDisplayName(user, fallbackId);
+  return String(name || "U").trim().charAt(0).toUpperCase() || "U";
+}
+
+function syncAvatar(imageNode, initialNode, avatarUrl, fallbackInitial) {
+  if (!imageNode || !initialNode) return;
+  if (avatarUrl) {
+    imageNode.src = avatarUrl;
+    imageNode.hidden = false;
+    initialNode.hidden = true;
+  } else {
+    imageNode.removeAttribute("src");
+    imageNode.hidden = true;
+    initialNode.hidden = false;
+    initialNode.textContent = fallbackInitial;
+  }
+}
+
+function syncLoginProfile() {
+  const userId = state.selectedLoginUser;
+  const profile = getDeviceUser(userId);
+  syncAvatar(dom.loginAvatarImage, dom.loginAvatarInitial, getUserAvatar(profile, userId), getUserInitial(profile, userId));
+  if (dom.loginProfileName) dom.loginProfileName.textContent = getUserDisplayName(profile, userId);
+  if (dom.loginProfileRole) dom.loginProfileRole.textContent = `${LOGIN_USERS[userId]?.label || "Perfil"} deste aparelho`;
 }
 
 async function loginSelectedUser() {
@@ -479,6 +611,7 @@ async function loginSelectedUser() {
     if (!response.ok || !data.token) throw new Error(data.error || "invalid-login");
 
     state.auth = { token: data.token, user: data.user };
+    rememberDeviceUser(data.user);
     writeStoredAuth();
     localStorage.setItem("mdl.lastLoginUser", state.selectedLoginUser);
     if (dom.loginPassword) dom.loginPassword.value = "";
@@ -486,7 +619,7 @@ async function loginSelectedUser() {
   } catch (error) {
     if (dom.loginStatus) dom.loginStatus.textContent = describeLoginError(error);
     return;
-    if (dom.loginStatus) dom.loginStatus.textContent = "Usuário ou senha inválidos.";
+    if (dom.loginStatus) dom.loginStatus.textContent = "Usu\u00E1rio ou senha inv\u00E1lidos.";
   }
 }
 
@@ -495,21 +628,38 @@ function syncAuthUi() {
   const config = user ? LOGIN_USERS[user.id] : null;
   document.body.classList.toggle("role-leader", isLeader());
   document.body.classList.toggle("role-musician", user?.role === "musician");
+  document.body.classList.toggle("role-dev", state.devMode);
+  document.querySelectorAll(".dev-only-card, .dev-only").forEach((el) => { el.hidden = !state.devMode; });
 
-  if (dom.accountInitial) dom.accountInitial.textContent = config?.initial || "U";
+  const displayName = getUserDisplayName(user, user?.id);
+  const avatarUrl = getUserAvatar(user, user?.id);
+  const userInitial = getUserInitial(user, user?.id);
+
+  if (dom.accountInitial) dom.accountInitial.textContent = userInitial;
   if (dom.accountButton && user) {
     dom.accountButton.title = `Conta: ${user.label}`;
     dom.accountButton.setAttribute("aria-label", `Conta: ${user.label}`);
   }
+  syncAvatar(dom.headerAvatarImage, dom.accountInitial, avatarUrl, userInitial);
+  syncAvatar(dom.sidebarAvatarImage, dom.sidebarAvatarInitial, avatarUrl, userInitial);
   if (dom.accountRole) dom.accountRole.textContent = user?.label || "Perfil";
+  if (dom.headerProfileName) dom.headerProfileName.textContent = displayName;
+  if (dom.headerProfileRole) dom.headerProfileRole.textContent = getRoleLabel(user);
+  if (dom.sidebarProfileName) dom.sidebarProfileName.textContent = displayName;
+  if (dom.sidebarProfileRole) dom.sidebarProfileRole.textContent = getRoleLabel(user);
   if (dom.accountEmail && document.activeElement !== dom.accountEmail) {
     dom.accountEmail.value = user?.email || "";
   }
+  if (dom.accountDisplayName && document.activeElement !== dom.accountDisplayName) {
+    dom.accountDisplayName.value = displayName;
+  }
+  syncAvatar(dom.accountAvatarImage, dom.accountAvatarInitial, state.pendingAccountAvatar || avatarUrl, userInitial);
   if (dom.accountName) dom.accountName.textContent = isLeader()
     ? "Pode editar o Play do ensaio neste aparelho"
     : "Pode visualizar o Play do ensaio neste aparelho";
 
   syncResetUi();
+  syncLoginProfile();
 
   renderPermissionState();
 }
@@ -518,13 +668,17 @@ function openAccountModal() {
   if (!state.auth?.user || !dom.accountModal) return;
   dom.accountModal.hidden = false;
   if (dom.accountStatus) dom.accountStatus.textContent = "";
+  state.pendingAccountAvatar = "";
   if (dom.accountEmail) dom.accountEmail.value = state.auth.user.email || "";
-  (state.auth.user.email ? dom.currentPassword : dom.accountEmail)?.focus();
+  if (dom.accountDisplayName) dom.accountDisplayName.value = getUserDisplayName(state.auth.user, state.auth.user.id);
+  syncAvatar(dom.accountAvatarImage, dom.accountAvatarInitial, getUserAvatar(state.auth.user, state.auth.user.id), getUserInitial(state.auth.user, state.auth.user.id));
+  (dom.accountDisplayName || dom.accountEmail)?.focus();
 }
 
 function closeAccountModal(silent = false) {
   if (!dom.accountModal) return;
   dom.accountModal.hidden = true;
+  state.pendingAccountAvatar = "";
   if (dom.accountForm) dom.accountForm.reset();
   if (!silent && dom.accountStatus) dom.accountStatus.textContent = "";
 }
@@ -551,15 +705,22 @@ function syncResetUi() {
 }
 
 async function saveAccount() {
+  const displayName = String(dom.accountDisplayName?.value || "").trim();
   const email = normalizeEmailInput(dom.accountEmail?.value || "");
   const currentPassword = dom.currentPassword?.value || "";
   const newPassword = dom.newPassword?.value || "";
   const confirmPassword = dom.confirmPassword?.value || "";
+  const currentDisplayName = String(state.auth?.user?.displayName || state.auth?.user?.name || "").trim();
+  const profileChanged = Boolean(displayName && displayName !== currentDisplayName) || Boolean(state.pendingAccountAvatar);
   const emailChanged = email !== normalizeEmailInput(state.auth?.user?.email || "");
   const wantsPasswordChange = Boolean(currentPassword || newPassword || confirmPassword);
 
-  if (!emailChanged && !wantsPasswordChange) {
+  if (!profileChanged && !emailChanged && !wantsPasswordChange) {
     if (dom.accountStatus) dom.accountStatus.textContent = "Nada para salvar.";
+    return;
+  }
+  if (!displayName) {
+    if (dom.accountStatus) dom.accountStatus.textContent = "Digite um nome para o usuario.";
     return;
   }
   if (email && !isValidEmailInput(email)) {
@@ -576,13 +737,29 @@ async function saveAccount() {
     return;
   }
   if (wantsPasswordChange && newPassword !== confirmPassword) {
-    if (dom.accountStatus) dom.accountStatus.textContent = "A confirmação não confere.";
+    if (dom.accountStatus) dom.accountStatus.textContent = "A confirma\u00E7\u00E3o n\u00E3o confere.";
     return;
   }
 
   if (dom.accountStatus) dom.accountStatus.textContent = "Salvando...";
   try {
     let updatedUser = state.auth?.user;
+
+    if (profileChanged) {
+      const profileResponse = await fetch("/api/auth/update-profile", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          displayName,
+          avatarDataUrl: state.pendingAccountAvatar || undefined
+        })
+      });
+      const profileData = await profileResponse.json().catch(() => ({}));
+      if (!profileResponse.ok || !profileData.ok) throw new Error(profileData.error || "update-profile-failed");
+      updatedUser = profileData.user || updatedUser;
+      rememberDeviceUser(updatedUser);
+      state.pendingAccountAvatar = "";
+    }
 
     if (emailChanged) {
       const emailResponse = await fetch("/api/auth/update-email", {
@@ -593,6 +770,7 @@ async function saveAccount() {
       const emailData = await emailResponse.json().catch(() => ({}));
       if (!emailResponse.ok || !emailData.ok) throw new Error(emailData.error || "update-email-failed");
       updatedUser = emailData.user || updatedUser;
+      rememberDeviceUser(updatedUser);
     }
 
     if (!wantsPasswordChange) {
@@ -600,9 +778,10 @@ async function saveAccount() {
       writeStoredAuth();
       syncAuthUi();
       if (dom.accountForm) dom.accountForm.reset();
+      if (dom.accountDisplayName) dom.accountDisplayName.value = updatedUser?.displayName || updatedUser?.name || "";
       if (dom.accountEmail) dom.accountEmail.value = updatedUser?.email || "";
-      if (dom.accountStatus) dom.accountStatus.textContent = "E-mail atualizado.";
-      toast("E-mail atualizado");
+      if (dom.accountStatus) dom.accountStatus.textContent = "Perfil atualizado.";
+      toast("Perfil atualizado");
       return;
     }
     const response = await fetch("/api/auth/change-password", {
@@ -613,17 +792,19 @@ async function saveAccount() {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.ok) throw new Error(data.error || "change-failed");
     updatedUser = data.user || updatedUser;
+    rememberDeviceUser(updatedUser);
     state.auth = { ...state.auth, user: updatedUser };
     writeStoredAuth();
     syncAuthUi();
     if (dom.accountForm) dom.accountForm.reset();
+    if (dom.accountDisplayName) dom.accountDisplayName.value = updatedUser?.displayName || updatedUser?.name || "";
     if (dom.accountEmail) dom.accountEmail.value = updatedUser?.email || "";
     if (dom.accountStatus) dom.accountStatus.textContent = "Dados salvos e senha atualizada.";
     toast("Senha atualizada neste aparelho");
   } catch (error) {
     if (dom.accountStatus) dom.accountStatus.textContent = describeAccountError(error);
     return;
-    if (dom.accountStatus) dom.accountStatus.textContent = "Senha atual inválida.";
+    if (dom.accountStatus) dom.accountStatus.textContent = "Senha atual inv\u00E1lida.";
   }
 }
 
@@ -728,6 +909,8 @@ function describeAccountError(error) {
   if (code === "invalid-email") return "Digite um e-mail valido.";
   if (code === "invalid-current-password") return "Senha atual invalida.";
   if (code === "password-too-short") return "A nova senha precisa ter pelo menos 4 caracteres.";
+  if (code === "invalid-image") return "Escolha uma imagem valida para a foto.";
+  if (code === "image-too-large") return "A foto escolhida ficou grande demais.";
   return "Nao foi possivel salvar agora.";
 }
 
@@ -761,6 +944,7 @@ function logout() {
   closeAccountModal(true);
   closeResetModal(true);
   state.auth = null;
+  disableDevMode();
   writeStoredAuth();
   syncAuthUi();
   showLogin("Sessao encerrada.");
@@ -772,7 +956,7 @@ function isLeader() {
 
 function requireLeader() {
   if (isLeader()) return true;
-  toast("Apenas o líder pode editar o Play do ensaio");
+  toast("Apenas o l\u00EDder pode editar o Play do ensaio");
   return false;
 }
 
@@ -783,12 +967,27 @@ function renderPermissionState() {
     const locked = !isLeader();
     button.disabled = locked;
     button.classList.toggle("locked", locked);
-    button.title = locked ? "Apenas o líder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
+    button.title = locked ? "Apenas o l\u00EDder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
     button.setAttribute("aria-label", button.title);
   });
   if (dom.editPlayButton) {
     dom.editPlayButton.disabled = !isLeader();
-    dom.editPlayButton.title = isLeader() ? "Editar Play do ensaio" : "Apenas o líder pode editar";
+    dom.editPlayButton.title = isLeader() ? "Editar Play do ensaio" : "Apenas o l\u00EDder pode editar";
+  }
+
+  const existingDevReaderButton = document.getElementById("devReaderEditButton");
+  if (state.devMode && state.currentView === "reader" && state.currentSongId) {
+    if (!existingDevReaderButton) {
+      const button = document.createElement("button");
+      button.id = "devReaderEditButton";
+      button.type = "button";
+      button.dataset.action = "open-dev-current";
+      button.textContent = "Editar";
+      button.className = "dev-reader-edit";
+      document.querySelector(".reader-tools")?.appendChild(button);
+    }
+  } else if (existingDevReaderButton) {
+    existingDevReaderButton.remove();
   }
 }
 
@@ -800,12 +999,14 @@ function applyPreviewState() {
 }
 
 async function loadSongs() {
+  let hasCatalog = false;
   try {
     const response = await fetch(`/api/catalog?limit=10000&v=${Date.now()}`);
     if (!response.ok) throw new Error("index-not-found");
     const data = await response.json();
     state.generatedAt = data.generatedAt || null;
-    state.songs = Array.isArray(data.songs) && data.songs.length ? data.songs : sampleSongs;
+    hasCatalog = Array.isArray(data.songs) && data.songs.length > 0;
+    state.songs = hasCatalog ? data.songs : sampleSongs;
     setPublicArtistThumbs(data.artistThumbs, state.songs);
     idbSetMeta("catalog", {
       generatedAt: state.generatedAt,
@@ -815,10 +1016,16 @@ async function loadSongs() {
   } catch {
     const offlineCatalog = await idbGetMeta("catalog").catch(() => null);
     state.generatedAt = offlineCatalog?.generatedAt || null;
-    state.songs = Array.isArray(offlineCatalog?.songs) && offlineCatalog.songs.length
-      ? offlineCatalog.songs
-      : sampleSongs;
+    hasCatalog = Array.isArray(offlineCatalog?.songs) && offlineCatalog.songs.length > 0;
+    state.songs = hasCatalog ? offlineCatalog.songs : sampleSongs;
     setPublicArtistThumbs(offlineCatalog?.artistThumbs, state.songs);
+  }
+
+  state.catalogReady = hasCatalog;
+  const normalizedPlay = normalizePlayEntries(state.play);
+  if (getPlaySignature(normalizedPlay) !== getPlaySignature(state.play)) {
+    state.play = normalizedPlay;
+    savePlay();
   }
 }
 
@@ -846,16 +1053,29 @@ function bindEvents() {
     renderCatalog();
     if (state.currentView !== "acervo") showView("acervo");
   });
+  document.querySelector(".brand-logo")?.addEventListener("click", handleDevLogoTap);
+  document.querySelector(".login-logo")?.addEventListener("click", handleDevLogoTap);
+  dom.devSongSearch?.addEventListener("input", renderDevSongList);
+  dom.devSongHtml?.addEventListener("input", renderDevPreview);
+  [dom.devSongTitle, dom.devSongArtist, dom.devSongKey, dom.devSongCollection].forEach((input) => input?.addEventListener("input", renderDevPreview));
+  dom.devChordSearch?.addEventListener("input", renderDevChordList);
+  [dom.devChordNameInput, dom.devChordNotes, dom.devChordBaseFret, dom.devChordBarre].forEach((input) => input?.addEventListener("input", syncDevChordFromInputs));
+  dom.accountAvatarInput?.addEventListener("change", handleAccountAvatarSelected);
   dom.localCoverInput?.addEventListener("change", handleLocalCoverSelected);
   dom.artistThumbInput?.addEventListener("change", handleArtistThumbSelected);
   dom.localAudioInput?.addEventListener("change", handleLocalAudioSelected);
 }
 
-function handleClick(event) {
+async function handleClick(event) {
   const chord = event.target.closest("[data-chord]");
   if (chord?.dataset.chord) {
     event.preventDefault();
-    return openChordGuide(chord.dataset.chord);
+    const chordName = chord.dataset.chord;
+    if (state.devMode && state.currentView === "dev") {
+      showDevTab("acordes");
+      return openDevChord(chordName);
+    }
+    return openChordGuide(chordName);
   }
 
   const button = event.target.closest("button");
@@ -878,6 +1098,7 @@ function handleClick(event) {
 
     if (action === "select-login-user") return selectLoginUser(button.dataset.userId);
     if (action === "open-account") return openAccountModal();
+    if (action === "pick-account-avatar") return chooseAccountAvatar();
     if (action === "close-account") return closeAccountModal();
     if (action === "open-reset") return openResetModal();
     if (action === "close-reset") return closeResetModal();
@@ -907,6 +1128,10 @@ function handleClick(event) {
     if (action === "font-up") return setReaderFont(state.readerFont + 1);
     if (action === "toggle-singer-mode") return toggleSingerMode();
     if (action === "toggle-tuner") return toggleTunerPanel();
+    if (action === "shortcut-add-song") return openAddSongShortcut();
+    if (action === "shortcut-import-audio") return openImportAudioShortcut();
+    if (action === "shortcut-chord-guide") return openChordGuideShortcut();
+    if (action === "shortcut-local-audio") return showSongsWithLocalAudio();
     if (action === "start-tuner") return state.tunerRunning ? stopTuner() : startTuner();
     if (action === "transpose-down") return transposeCurrentSong(-1);
     if (action === "transpose-up") return transposeCurrentSong(1);
@@ -916,6 +1141,23 @@ function handleClick(event) {
     if (action === "share-play") return sharePlay();
     if (action === "toggle-edit-play") return requireLeader() && togglePlayEditing();
     if (action === "admin-refresh") return adminRefresh();
+    if (action === "dev-check-system") return showView("acervo");
+    if (action === "dev-exit") return exitDevMode();
+    if (action === "dev-tab") return showDevTab(button.dataset.tab);
+    if (action === "dev-open-song") return openDevSong(id);
+    if (action === "dev-preview-song") return renderDevPreview();
+    if (action === "dev-save-song") return saveDevSong();
+    if (action === "dev-restore-song") return restoreDevSongVersion();
+    if (action === "dev-preview-singer") return toggleDevPreviewSinger();
+    if (action === "dev-preview-transpose-down") return transposeDevPreview(-1);
+    if (action === "dev-preview-transpose-up") return transposeDevPreview(1);
+    if (action === "dev-preview-transpose-reset") return transposeDevPreview(0, true);
+    if (action === "dev-open-chord") return openDevChord(button.dataset.chord);
+    if (action === "dev-new-chord") return newDevChord();
+    if (action === "dev-save-chord") return saveDevChord();
+    if (action === "dev-clear-chord") return clearDevChord();
+    if (action === "open-dev-current") return openDevEditorFromReader();
+    if (action === "dev-edit-active-chord") return openDevChordFromGuide();
     if (action === "close-chord-guide") return closeChordGuide();
   }
 
@@ -962,6 +1204,7 @@ function renderAll() {
   renderFavorites();
   renderPlay();
   renderArtists();
+  renderDevWorkspace();
   updateStats();
 }
 
@@ -971,12 +1214,17 @@ function renderDashboard() {
   if (dom.topArtistStack) {
     dom.topArtistStack.innerHTML = topArtists.length
       ? topArtists.map(([artist, songs]) => renderTopArtist(artist, songs)).join("")
-      : `<span class="top-artist-empty">MDL</span>`;
+      : `<span class="top-artist-empty">---</span>`;
   }
   if (dom.dashboardPlaySummary) {
     dom.dashboardPlaySummary.textContent = state.play.length
       ? `${state.play.length} musica${state.play.length === 1 ? "" : "s"} no repertorio`
       : "Monte o repertorio para comecar";
+  }
+  if (dom.sidebarPlaySummary) {
+    dom.sidebarPlaySummary.textContent = state.play.length
+      ? `${state.play.length} musica${state.play.length === 1 ? "" : "s"} no repertorio`
+      : "Monte um repertorio para este aparelho";
   }
 }
 
@@ -984,18 +1232,23 @@ function renderTopArtist(artist, songs) {
   const thumb = getArtistThumb(artist);
   const initials = getInitials(artist);
   const thumbTitle = isLeader() ? `Enviar thumb online de ${artist}` : `Salvar thumb de ${artist} neste aparelho`;
+  const rank = getArtistGroups().findIndex(([name]) => name === artist) + 1;
   return `
-    <button class="top-artist-avatar" type="button" data-action="set-artist-thumb" data-artist="${escapeAttr(artist)}" title="${escapeAttr(thumbTitle)}" aria-label="${escapeAttr(thumbTitle)}">
-      ${thumb ? `<img src="${escapeAttr(thumb)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
-      <b>${formatNumber(songs.length)}</b>
-    </button>
+    <div class="top-artist-row">
+      <span class="top-artist-rank">${rank}</span>
+      <button class="top-artist-avatar" type="button" data-action="set-artist-thumb" data-artist="${escapeAttr(artist)}" title="${escapeAttr(thumbTitle)}" aria-label="${escapeAttr(thumbTitle)}">
+        ${thumb ? `<img src="${escapeAttr(thumb)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
+      </button>
+      <span class="top-artist-name">${escapeHtml(artist)}</span>
+      <b class="top-artist-count">${formatNumber(songs.length)}</b>
+    </div>
   `;
 }
 
 function renderCatalog() {
   dom.songList.innerHTML = state.filtered.length
     ? state.filtered.map(renderSongCard).join("")
-    : emptyState("Nenhuma música encontrada.");
+    : emptyState("Nenhuma m\u00FAsica encontrada.");
   syncFavoriteControls();
   renderPermissionState();
 }
@@ -1015,8 +1268,8 @@ function renderPlay() {
     .filter(({ song }) => Boolean(song));
 
   const playEmptyText = isLeader()
-    ? "Adicione músicas pelo botão + no acervo. Elas aparecem aqui para o ensaio."
-    : "O Play do ensaio aparecerá aqui quando o líder adicionar músicas.";
+    ? "Adicione m\u00FAsicas pelo bot\u00E3o + no acervo. Elas aparecem aqui para o ensaio."
+    : "O Play do ensaio aparecer\u00E1 aqui quando o l\u00EDder adicionar m\u00FAsicas.";
 
   dom.playList.innerHTML = entries.length
     ? entries.map(({ entry, song }, index) => renderWorshipSong(entry, song, index)).join("")
@@ -1052,7 +1305,7 @@ function renderArtistCard(artist, songs) {
   const saved = songs.filter((song) => state.offlineSongs.has(song.id)).length;
   const progress = state.offlineArtistDownloads.get(artist);
   const isOffline = total > 0 && saved >= total;
-  const countLabel = `${total} ${total === 1 ? "música" : "músicas"}`;
+  const countLabel = `${total} ${total === 1 ? "m\u00FAsica" : "m\u00FAsicas"}`;
   const offlineLabel = progress
     ? `Baixando ${Math.min(progress.saved, progress.total)}/${progress.total}`
     : isOffline
@@ -1060,9 +1313,9 @@ function renderArtistCard(artist, songs) {
       : saved
         ? `${saved}/${total} offline`
         : "";
-  const metaLabel = [countLabel, offlineLabel].filter(Boolean).join(" · ");
+  const metaLabel = [countLabel, offlineLabel].filter(Boolean).join(" \u00B7 ");
   const downloadTitle = isOffline
-    ? `Biblioteca de ${artist} já está offline`
+    ? `Biblioteca de ${artist} j\u00E1 est\u00E1 offline`
     : `Baixar biblioteca de cifras de ${artist}`;
   const downloadClass = [
     "mini-action",
@@ -1107,22 +1360,63 @@ function renderArtistSongs(artist) {
   renderCatalog();
 }
 
+function openAddSongShortcut() {
+  if (state.devMode) {
+    showView("dev");
+    showDevTab("cifras");
+    return;
+  }
+  showView("acervo");
+  toast("Adicionar musica fica disponivel no modo desenvolvedor");
+}
+
+function openImportAudioShortcut() {
+  showView("acervo");
+  if (state.currentSongId) {
+    chooseLocalAudio(state.currentSongId);
+    return;
+  }
+  toast("Abra uma musica e toque no icone de nota para anexar um MP3");
+}
+
+function openChordGuideShortcut() {
+  const chord = state.activeChordBase || state.baseKey || "C";
+  showView(state.currentSongId ? "reader" : "acervo");
+  openChordGuide(chord);
+}
+
+function showSongsWithLocalAudio() {
+  const songs = state.songs.filter((song) => Boolean(getSongMedia(song.id)?.audioBlob));
+  showView("acervo");
+  dom.search.value = "";
+  state.filtered = songs;
+  renderCatalog();
+  if (!songs.length) {
+    toast("Nenhum MP3 local foi adicionado ainda");
+    return;
+  }
+  toast(`${songs.length} musica${songs.length === 1 ? "" : "s"} com MP3 local`);
+}
+
 function renderSongCard(song) {
   const isFavorite = state.favorites.has(song.id);
   const favoriteClass = isFavorite ? "mini-action active" : "mini-action";
   const favoriteTitle = isFavorite ? "Remover dos favoritos" : "Favoritar";
-  const favoriteGlyph = isFavorite ? "★" : "☆";
+  const favoriteGlyph = isFavorite
+    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 14.6 9.7l5.8.8-4.2 4.1 1 5.8L12 17.5 6.8 20.4l1-5.8-4.2-4.1 5.8-.8z"></path></svg>`
+    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l2 4 4 .5-3 3 .8 4.5-3.8-2.2L8.2 17l.8-4.5-3-3 4-.5z"></path></svg>`;
   const songMeta = getSongMetaLabel(song);
   const playLocked = !isLeader();
   const media = getSongMedia(song.id);
   const cover = media?.cover || getArtistThumb(song.artist);
   const hasAudio = Boolean(media?.audioBlob);
-  const playTitle = playLocked ? "Apenas o líder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
+  const playTitle = playLocked ? "Apenas o l\u00EDder pode adicionar ao Play do ensaio" : "Adicionar ao Play do ensaio";
   return `
     <article class="song-card">
       <button class="song-cover" type="button" data-action="set-cover" data-id="${escapeAttr(song.id)}" title="Trocar capa local" aria-label="Trocar capa local de ${escapeAttr(song.title)}">
         ${cover ? `<img src="${escapeAttr(cover)}" alt="">` : `<span>${escapeHtml(song.key || getInitials(song.title))}</span>`}
       </button>
+      <span class="song-key-badge">${escapeHtml(song.key || "Tom")}</span>
       <button class="song-main" type="button" data-action="open" data-id="${escapeAttr(song.id)}">
         <span class="song-title">${escapeHtml(song.title)}</span>
         <span class="song-meta">${escapeHtml(songMeta)}${hasAudio ? " - MP3 local" : ""}</span>
@@ -1143,7 +1437,7 @@ function renderSongCard(song) {
 
 function getSongMetaLabel(song) {
   const collection = getVisibleCollection(song.collection);
-  return [song.artist, collection].filter(Boolean).join(" · ");
+  return [song.artist, collection].filter(Boolean).join(" \u00B7 ");
 }
 
 function getVisibleCollection(collection) {
@@ -1160,7 +1454,7 @@ function renderWorshipSong(entry, song, index) {
   const offlineBadge = state.offlineSongs.has(song.id) ? `<span class="offline-badge">offline</span>` : "";
   const localAudioBadge = hasAudio ? `<span class="local-audio-badge">MP3</span>` : "";
   const removeButton = state.playEditing && isLeader()
-    ? `<button class="worship-remove" type="button" data-action="remove-play" data-id="${escapeAttr(song.id)}" title="Remover cifra">×</button>`
+    ? `<button class="worship-remove" type="button" data-action="remove-play" data-id="${escapeAttr(song.id)}" title="Remover cifra">&times;</button>`
     : "";
 
   return `
@@ -1208,7 +1502,7 @@ async function openSong(id) {
     state.baseKey = song.key || inferKeyFromHtml(state.currentSheetHtml);
   } catch {
     const offlineSong = await idbGetSong(id);
-    state.currentSheetHtml = normalizeSheetContent(offlineSong?.html || sampleSheets[id] || `${escapeHtml(song.title)}\n\nCifra ainda não importada.`);
+    state.currentSheetHtml = normalizeSheetContent(offlineSong?.html || sampleSheets[id] || `${escapeHtml(song.title)}\n\nCifra ainda n\u00E3o importada.`);
     state.baseKey = song.key || inferKeyFromHtml(state.currentSheetHtml);
   }
 
@@ -1223,6 +1517,7 @@ function renderCurrentSheet() {
   dom.chordSheet.innerHTML = `<pre>${html}</pre>`;
   applyReaderPreferences();
   updateToneButton();
+  renderPermissionState();
   if (state.singerMode) {
     closeChordGuide(true);
   } else if (state.chordGuideOpen && state.activeChordBase) {
@@ -1250,7 +1545,9 @@ function refreshChordGuide() {
   dom.chordGuideName.textContent = guide.name;
   dom.chordGuideMeta.textContent = guide.meta;
   dom.chordGuideNotes.innerHTML = guide.notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("");
-  dom.chordGuideHint.textContent = guide.hint;
+  dom.chordGuideHint.innerHTML = state.devMode
+    ? `${escapeHtml(guide.hint)} <button class="chord-dev-edit" type="button" data-action="dev-edit-active-chord">Editar desenho</button>`
+    : escapeHtml(guide.hint);
   dom.chordGuideDiagram.innerHTML = renderChordGuideDiagram(guide);
   dom.chordGuide.classList.add("open");
   dom.chordGuide.setAttribute("aria-hidden", "false");
@@ -1265,7 +1562,7 @@ function closeChordGuide(preserveBase = false) {
   document.body.classList.remove("chord-guide-open");
 }
 
-function addToPlay(id, selectedKey = null) {
+async function addToPlay(id, selectedKey = null) {
   if (!isLeader()) return requireLeader();
   if (!id) return;
   const song = findSong(id);
@@ -1278,23 +1575,30 @@ function addToPlay(id, selectedKey = null) {
     state.play.push({ id, key: selectedKey || song.key || null });
   }
 
+  state.play = normalizePlayEntries(state.play);
+  state.playDirty = true;
   savePlay();
+  await pushSharedPlay();
   renderPlay();
   toast("Adicionada ao Play do ensaio");
   downloadSongForOffline(id);
 }
 
-function removeFromPlay(id) {
+async function removeFromPlay(id) {
   if (!isLeader()) return requireLeader();
-  state.play = state.play.filter((entry) => entry.id !== id);
+  state.play = normalizePlayEntries(state.play.filter((entry) => entry.id !== id));
+  state.playDirty = true;
   savePlay();
+  await pushSharedPlay();
   renderPlay();
 }
 
-function clearPlay() {
+async function clearPlay() {
   if (!isLeader()) return requireLeader();
   state.play = [];
+  state.playDirty = true;
   savePlay();
+  await pushSharedPlay();
   renderPlay();
 }
 
@@ -1320,7 +1624,7 @@ function syncFavoriteControls() {
     const isFavorite = state.favorites.has(button.dataset.id);
     const title = isFavorite ? "Remover dos favoritos" : "Favoritar";
     button.classList.toggle("active", isFavorite);
-    button.textContent = isFavorite ? "★" : "☆";
+    button.textContent = isFavorite ? "\u2605" : "\u2606";
     button.title = title;
     button.setAttribute("aria-label", title);
     button.setAttribute("aria-pressed", String(isFavorite));
@@ -1427,6 +1731,21 @@ function chooseLocalAudio(id) {
   state.pendingAudioSongId = id;
   dom.localAudioInput.value = "";
   dom.localAudioInput.click();
+}
+
+function chooseAccountAvatar() {
+  if (!dom.accountAvatarInput) return;
+  dom.accountAvatarInput.value = "";
+  dom.accountAvatarInput.click();
+}
+
+async function handleAccountAvatarSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) return toast("Escolha uma imagem");
+  if (file.size > LOCAL_COVER_MAX_BYTES) return toast("Imagem muito grande");
+  state.pendingAccountAvatar = await fileToDataUrl(file);
+  syncAvatar(dom.accountAvatarImage, dom.accountAvatarInitial, state.pendingAccountAvatar, getUserInitial(state.auth?.user, state.auth?.user?.id));
 }
 
 async function handleLocalCoverSelected(event) {
@@ -1631,28 +1950,39 @@ function formatBytes(value) {
 
 async function refreshLibrary() {
   await loadSongs();
+  const playChanged = await syncSharedPlay({ silent: true });
   filterSongs();
   renderAll();
+  if (playChanged) downloadPlayForOffline();
 }
 
 async function autoRefreshLibrary() {
   if (state.currentView === "reader") return;
-  const before = getLibraryRefreshSignature();
+  const beforeLibrary = getLibraryRefreshSignature();
+  const beforePlay = getPlaySignature(state.play);
   await loadSongs();
-  if (getLibraryRefreshSignature() !== before) {
+  const playChanged = await syncSharedPlay({ silent: true });
+  if (getLibraryRefreshSignature() !== beforeLibrary || getPlaySignature(state.play) !== beforePlay || playChanged) {
     filterSongs();
     renderAll();
+    if (getPlaySignature(state.play) !== beforePlay || playChanged) {
+      downloadPlayForOffline();
+    }
   }
 }
 
 function showView(viewName) {
+  if (viewName === "dev" && !state.devMode) {
+    toast("Acesso desenvolvedor bloqueado");
+    return;
+  }
   if (viewName !== "reader") {
     stopAutoScroll();
     stopTuner();
     closeChordGuide(true);
   }
   state.currentView = viewName;
-  ["acervo", "favoritas", "play", "artistas", "reader", "admin"].forEach((name) => {
+  ["acervo", "favoritas", "play", "artistas", "reader", "admin", "dev"].forEach((name) => {
     document.body.classList.remove(`screen-${name}`);
   });
   document.body.classList.add(`screen-${viewName}`);
@@ -1663,8 +1993,16 @@ function showView(viewName) {
   const view = document.getElementById(`view-${viewName}`);
   if (view) view.classList.add("active");
 
-  const quick = document.querySelector(`[data-view="${viewName}"]`);
-  if (quick) quick.classList.add("active");
+  if (viewName === "dev") {
+    // O modo desenvolvedor deve manter o dashboard normal visÒ­vel e
+    // anexar os editores abaixo dele, como na tela premium de referÒªncia.
+    document.getElementById("view-acervo")?.classList.add("active");
+    document.querySelector(`[data-view="acervo"]`)?.classList.add("active");
+    renderDevWorkspace();
+  } else {
+    const quick = document.querySelector(`[data-view="${viewName}"]`);
+    if (quick) quick.classList.add("active");
+  }
 }
 
 function setReaderFont(size) {
@@ -1758,8 +2096,8 @@ async function startTuner() {
 
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass || !navigator.mediaDevices?.getUserMedia) {
-    setTunerStatus("Microfone indisponível");
-    toast("Microfone indisponível neste navegador");
+    setTunerStatus("Microfone indispon\u00EDvel");
+    toast("Microfone indispon\u00EDvel neste navegador");
     return;
   }
 
@@ -1797,7 +2135,7 @@ async function startTuner() {
   } catch {
     stopTuner();
     setTunerStatus("Microfone bloqueado");
-    toast("Não foi possível abrir o microfone");
+    toast("N\u00E3o foi poss\u00EDvel abrir o microfone");
   }
 }
 
@@ -1907,7 +2245,7 @@ function renderTunerReading(frequency) {
       ? "Afinado!"
       : cents < 0
         ? `Suba ${Math.abs(cents)} cents`
-        : `Desça ${Math.abs(cents)} cents`;
+        : `Des\u00E7a ${Math.abs(cents)} cents`;
   }
 }
 
@@ -1939,7 +2277,7 @@ function clamp(value, min, max) {
 
 function startService() {
   const first = state.play[0];
-  if (!first) return toast("Adicione músicas ao culto primeiro");
+  if (!first) return toast("Adicione m\u00FAsicas ao culto primeiro");
   openSong(first.id);
 }
 
@@ -1950,16 +2288,16 @@ async function sharePlay() {
     return `${index + 1}. ${song.title} - ${song.artist} (${entry.key || song.key || "Tom"})`;
   }).filter(Boolean);
 
-  if (!songs.length) return toast("Nenhuma música no culto");
+  if (!songs.length) return toast("Nenhuma m\u00FAsica no culto");
 
-  const text = `Play do ensaio - MDL Inova\n\n${songs.join("\n")}`;
+  const text = `Play do ensaio - Acervo Musical\n\n${songs.join("\n")}`;
   if (navigator.share) {
     await navigator.share({ title: "Play do ensaio", text });
   } else if (navigator.clipboard) {
     await navigator.clipboard.writeText(text);
     toast("Lista copiada");
   } else {
-    toast("Compartilhamento indisponível");
+    toast("Compartilhamento indispon\u00EDvel");
   }
 }
 
@@ -1969,13 +2307,92 @@ function togglePlayEditing() {
   renderPlay();
 }
 
+
+function isDevMode() { return Boolean(state.devMode && state.devToken); }
+async function handleDevLogoTap() {
+  clearTimeout(state.devTapTimer);
+  state.devTapCount += 1;
+  state.devTapTimer = setTimeout(() => { state.devTapCount = 0; }, 2600);
+  if (state.devTapCount < 5) return;
+  state.devTapCount = 0;
+  if (state.devMode) { showView("dev"); return; }
+  const password = prompt("Senha do Modo Desenvolvedor:");
+  if (!password) return;
+  await loginDevMode(password);
+}
+async function loginDevMode(password) {
+  try {
+    const response = await fetch("/api/dev-login", { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ password }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.token) throw new Error(data.error || "dev-denied");
+    state.devMode = true; state.devToken = data.token; sessionStorage.setItem("mdl.devToken", data.token);
+    await loadDevChordLibrary(); syncAuthUi(); renderAll(); showView("dev"); toast("Modo desenvolvedor ativado");
+  } catch { toast("Senha DEV inv\u00E1lida"); }
+}
+function disableDevMode() {
+  state.devMode = false;
+  state.devToken = "";
+  sessionStorage.removeItem("mdl.devToken");
+  document.body.classList.remove("role-dev", "screen-dev");
+  document.querySelectorAll(".dev-only-card, .dev-only").forEach((el) => { el.hidden = true; });
+  document.getElementById("devReaderEditButton")?.remove();
+}
+function exitDevMode() {
+  disableDevMode();
+  showView("acervo");
+  syncAuthUi();
+  renderAll();
+  toast("Modo desenvolvedor encerrado");
+}
+function devHeaders(extra = {}) { return authHeaders({ ...extra, ...(state.devToken ? { "X-Dev-Token": state.devToken } : {}) }); }
+async function loadDevChordLibrary() { if (!state.devToken) return; try { const response = await fetch(`/api/dev/chords?v=${Date.now()}`, { headers: devHeaders() }); const data = await response.json().catch(() => ({})); if (response.ok && data.chords && typeof data.chords === "object") { state.customChordShapes = data.chords; Object.assign(CHORD_SHAPE_LIBRARY, data.chords); } } catch {} }
+function renderDevWorkspace() { if (!state.devMode) return; renderDevSongList(); renderDevChordList(); renderDevChordEditor(); }
+function showDevTab(tab = "cifras") { const key = tab === "acordes" ? "acordes" : "cifras"; document.querySelectorAll(".dev-card").forEach((button) => button.classList.toggle("active", button.dataset.tab === key)); document.getElementById("devTabCifras")?.classList.toggle("active", key === "cifras"); document.getElementById("devTabAcordes")?.classList.toggle("active", key === "acordes"); }
+function renderDevSongList() { if (!dom.devSongList || !state.devMode) return; const query = normalize(dom.devSongSearch?.value || ""); const songs = state.songs.filter((song) => !query || normalize(`${song.title} ${song.artist} ${song.collection || ""}`).includes(query)).slice(0, 120); dom.devSongList.innerHTML = songs.length ? songs.map((song) => `<button type="button" data-action="dev-open-song" data-id="${escapeAttr(song.id)}" class="${song.id === state.devCurrentSongId ? "active" : ""}"><strong>${escapeHtml(song.title)}</strong><span>${escapeHtml(song.artist)}</span></button>`).join("") : `<div class="dev-empty">Nenhuma m\u00FAsica encontrada.</div>`; }
+async function openDevEditorFromReader() { if (!state.currentSongId) return; await openDevSong(state.currentSongId, true); }
+async function openDevSong(id, goToDev = false) { if (!state.devMode) return; const song = findSong(id); if (!song) return; state.devCurrentSongId = id; state.devPreviewTranspose = 0; if (dom.devSongStatus) dom.devSongStatus.textContent = "Carregando m\u00FAsica..."; try { const response = await fetch(`/api/songs/${encodeURIComponent(id)}?v=${Date.now()}`); const data = response.ok ? await response.json() : {}; if (dom.devSongTitle) dom.devSongTitle.value = data.title || song.title || ""; if (dom.devSongArtist) dom.devSongArtist.value = data.artist || song.artist || ""; if (dom.devSongKey) dom.devSongKey.value = data.key || song.key || ""; if (dom.devSongCollection) dom.devSongCollection.value = data.collection || song.collection || ""; if (dom.devSongHtml) dom.devSongHtml.value = normalizeSheetContent(data.html || sampleSheets[id] || ""); if (dom.devSongStatus) dom.devSongStatus.textContent = ""; } catch { if (dom.devSongHtml) dom.devSongHtml.value = sampleSheets[id] || ""; if (dom.devSongStatus) dom.devSongStatus.textContent = "Usando vers\u00E3o local/offline."; } renderDevSongList(); renderDevPreview(); showDevTab("cifras"); if (goToDev) showView("dev"); }
+function renderDevPreview() { if (!dom.devChordPreview) return; const rawHtml = dom.devSongHtml?.value || ""; const title = dom.devSongTitle?.value || "Selecione uma m\u00FAsica"; if (dom.devPreviewTitle) dom.devPreviewTitle.textContent = title; const html = state.devPreviewSingerMode ? stripChordsToLyrics(rawHtml) : decorateChordHtml(transposeHtml(rawHtml, state.devPreviewTranspose)); dom.devChordPreview.innerHTML = `<pre>${html || "Abra uma m\u00FAsica para testar a leitura."}</pre>`; }
+function toggleDevPreviewSinger() { state.devPreviewSingerMode = !state.devPreviewSingerMode; renderDevPreview(); }
+function transposeDevPreview(amount, reset = false) { state.devPreviewTranspose = reset ? 0 : state.devPreviewTranspose + amount; renderDevPreview(); }
+async function saveDevSong() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvando..."; try { const response = await fetch("/api/dev/save-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId, title: dom.devSongTitle?.value || "", artist: dom.devSongArtist?.value || "", key: dom.devSongKey?.value || "", collection: dom.devSongCollection?.value || "", html: dom.devSongHtml?.value || "" }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-failed"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvo com versionamento."; toast("Cifra salva"); await refreshLibrary(); if (state.currentSongId === state.devCurrentSongId) await openSong(state.devCurrentSongId); } catch { if (dom.devSongStatus) dom.devSongStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar cifra"); } }
+async function restoreDevSongVersion() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (!confirm("Restaurar a vers\u00E3o anterior desta m\u00FAsica?")) return; try { const response = await fetch("/api/dev/restore-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "restore-failed"); await openDevSong(state.devCurrentSongId); await refreshLibrary(); toast("Vers\u00E3o restaurada"); } catch { toast("N\u00E3o h\u00E1 vers\u00E3o anterior para restaurar"); } }
+function getDevChordKeys() { return Object.keys(CHORD_SHAPE_LIBRARY).sort((a, b) => a.localeCompare(b, "pt-BR")); }
+function renderDevChordList() { if (!dom.devChordList || !state.devMode) return; const query = normalize(dom.devChordSearch?.value || ""); const chords = getDevChordKeys().filter((name) => !query || normalize(name).includes(query)).slice(0, 180); dom.devChordList.innerHTML = chords.length ? chords.map((name) => `<button type="button" data-action="dev-open-chord" data-chord="${escapeAttr(name)}" class="${name === state.devChordName ? "active" : ""}"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(CHORD_SHAPE_LIBRARY[name]?.label || "Forma sugerida")}</span></button>`).join("") : `<div class="dev-empty">Nenhum acorde encontrado.</div>`; }
+function openDevChord(name) {
+  const chordName = String(name || "C").trim() || "C";
+  const sourceShape = (state.customChordShapes && state.customChordShapes[chordName]) || CHORD_SHAPE_LIBRARY[chordName] || { frets: ["x", "x", "x", "x", "x", "x"], baseFret: 1 };
+  const shape = normalizeChordShape(sourceShape);
+  state.devChordName = chordName;
+  state.devChordFrets = shape.frets.slice();
+  state.devChordBaseFret = shape.baseFret || 1;
+  state.devChordBarres = shape.barres || [];
+  if (dom.devChordNameInput) dom.devChordNameInput.value = chordName;
+  if (dom.devChordBaseFret) dom.devChordBaseFret.value = String(state.devChordBaseFret);
+  if (dom.devChordBarre) dom.devChordBarre.value = formatDevBarres(state.devChordBarres);
+  const parsed = parseChordName(chordName);
+  const savedNotes = Array.isArray(sourceShape.notes) ? sourceShape.notes.join(", ") : "";
+  if (dom.devChordNotes) dom.devChordNotes.value = savedNotes || (parsed ? buildChordNotes(parsed).join(", ") : "");
+  renderDevChordList();
+  renderDevChordEditor();
+  showDevTab("acordes");
+}
+function openDevChordFromGuide() { const currentChord = state.activeChordBase ? transposeChordText(state.activeChordBase, state.transposeOffset) : dom.chordGuideName?.textContent; closeChordGuide(); showView("dev"); openDevChord(currentChord || "C"); }
+function newDevChord() { state.devChordName = ""; state.devChordFrets = ["x", "x", "x", "x", "x", "x"]; state.devChordBaseFret = 1; state.devChordBarres = []; if (dom.devChordNameInput) dom.devChordNameInput.value = ""; if (dom.devChordNotes) dom.devChordNotes.value = ""; if (dom.devChordBaseFret) dom.devChordBaseFret.value = "1"; if (dom.devChordBarre) dom.devChordBarre.value = ""; renderDevChordEditor(); }
+function clearDevChord() { state.devChordFrets = ["x", "x", "x", "x", "x", "x"]; state.devChordBarres = []; if (dom.devChordBarre) dom.devChordBarre.value = ""; renderDevChordEditor(); }
+function syncDevChordFromInputs() { state.devChordName = String(dom.devChordNameInput?.value || "").trim(); state.devChordBaseFret = Math.max(1, Math.min(15, Number(dom.devChordBaseFret?.value || 1))); state.devChordBarres = parseDevBarres(dom.devChordBarre?.value || ""); renderDevChordPreview(); }
+function renderDevChordEditor() { if (!dom.devChordGrid || !state.devMode) return; const rows = [1, 2, 3, 4, 5]; dom.devChordGrid.innerHTML = `<div class="dev-chord-grid-lines" aria-hidden="true">${STRING_LABELS.map((_, index) => `<span class="dev-string-line" style="--string:${index}"></span>`).join("")}${[0,1,2,3,4,5].map((fret) => `<span class="dev-fret-line" style="--fret:${fret}"></span>`).join("")}</div>${rows.map((row) => STRING_LABELS.map((_, stringIndex) => { const absoluteFret = state.devChordBaseFret + row - 1; const active = state.devChordFrets[stringIndex] === absoluteFret; return `<button type="button" class="dev-fret-dot${active ? " active" : ""}" style="--string:${stringIndex}; --fret:${row}" data-string="${stringIndex}" data-fret="${absoluteFret}" aria-label="Corda ${stringIndex + 1}, casa ${absoluteFret}"></button>`; }).join("")).join("")}`; dom.devChordGrid.querySelectorAll(".dev-fret-dot").forEach((button) => { button.addEventListener("click", () => { const stringIndex = Number(button.dataset.string); const fret = Number(button.dataset.fret); state.devChordFrets[stringIndex] = state.devChordFrets[stringIndex] === fret ? "x" : fret; renderDevChordEditor(); }); }); if (dom.devChordStringModes) { dom.devChordStringModes.innerHTML = STRING_LABELS.map((label, index) => { const value = state.devChordFrets[index]; return `<button type="button" data-string="${index}" class="${value === 0 ? "open" : value === "x" ? "muted" : ""}">${escapeHtml(label)}: ${value === 0 ? "O" : value === "x" ? "X" : value}</button>`; }).join(""); dom.devChordStringModes.querySelectorAll("button").forEach((button) => { button.addEventListener("click", () => { const index = Number(button.dataset.string); state.devChordFrets[index] = state.devChordFrets[index] === 0 ? "x" : 0; renderDevChordEditor(); }); }); } renderDevChordPreview(); }
+function renderDevChordPreview() { if (!dom.devChordPreviewDiagram) return; const name = String(dom.devChordNameInput?.value || state.devChordName || "Acorde").trim(); if (dom.devChordPreviewName) dom.devChordPreviewName.textContent = name || "Acorde"; const shape = normalizeChordShape({ frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada" }); dom.devChordPreviewDiagram.innerHTML = renderChordGuideDiagram({ shape }); }
+async function saveDevChord() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); const name = String(dom.devChordNameInput?.value || "").trim(); if (!name) return toast("Digite o nome do acorde"); syncDevChordFromInputs(); const shape = { frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada", notes: String(dom.devChordNotes?.value || "").split(",").map((note) => note.trim()).filter(Boolean) }; if (dom.devChordStatus) dom.devChordStatus.textContent = "Salvando acorde..."; try { const response = await fetch("/api/dev/save-chord", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ name, shape }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-chord-failed"); CHORD_SHAPE_LIBRARY[name] = shape; state.customChordShapes = { ...(state.customChordShapes || {}), [name]: shape }; state.devChordName = name; renderDevChordList(); renderDevChordPreview(); if (state.chordGuideOpen) refreshChordGuide(); if (dom.devChordStatus) dom.devChordStatus.textContent = "Acorde salvo. Clique em Conferir no sistema para testar."; toast("Acorde salvo"); } catch { if (dom.devChordStatus) dom.devChordStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar acorde"); } }
+function parseDevBarres(value) { return String(value || "").split(/[;,]/).map((item) => { const match = item.trim().match(/^(\d+)\s*:\s*(\d)\s*-\s*(\d)$/); if (!match) return null; return { fret: Number(match[1]), fromString: Number(match[2]), toString: Number(match[3]) }; }).filter(Boolean); }
+function formatDevBarres(barres) { return (barres || []).map((barre) => `${barre.fret}:${barre.fromString}-${barre.toString}`).join(", "); }
+
 async function adminRefresh() {
   try {
     await fetch("/api/import", { method: "POST" });
     toast("Atualizando acervo");
     setTimeout(refreshLibrary, 1600);
   } catch {
-    toast("Não foi possível atualizar");
+    toast("N\u00E3o foi poss\u00EDvel atualizar");
   }
 }
 
@@ -1983,9 +2400,10 @@ function updateStats() {
   const total = state.songs.length;
   const artists = new Set(state.songs.map((song) => song.artist)).size;
   const audioCount = Array.from(state.songMedia.values()).filter((media) => media.audioBlob).length;
-  dom.libraryStats.textContent = `${total} ${total === 1 ? "música" : "músicas"} · ${artists} ${artists === 1 ? "artista" : "artistas"}`;
-  dom.favoriteStats.textContent = `${state.favorites.size} ${state.favorites.size === 1 ? "música" : "músicas"}`;
-  if (dom.playStats) dom.playStats.textContent = `${state.play.length} ${state.play.length === 1 ? "música separada" : "músicas separadas"}`;
+  const playProgress = state.play.length ? Math.min(100, Math.max(25, state.play.length * 25)) : 25;
+  dom.libraryStats.textContent = `${total} ${total === 1 ? "m\u00FAsica" : "m\u00FAsicas"} \u00B7 ${artists} ${artists === 1 ? "artista" : "artistas"}`;
+  dom.favoriteStats.textContent = `${state.favorites.size} ${state.favorites.size === 1 ? "m\u00FAsica" : "m\u00FAsicas"}`;
+  if (dom.playStats) dom.playStats.textContent = `${state.play.length} ${state.play.length === 1 ? "m\u00FAsica separada" : "m\u00FAsicas separadas"}`;
   dom.playCount.textContent = String(state.play.length);
   if (dom.worshipCount) dom.worshipCount.textContent = String(state.play.length);
   if (dom.worshipProgress) dom.worshipProgress.style.width = state.play.length ? `${Math.min(100, Math.max(26, state.play.length * 20))}%` : "0%";
@@ -1998,13 +2416,106 @@ function updateStats() {
   if (dom.dashboardFavoriteCount) dom.dashboardFavoriteCount.textContent = formatNumber(state.favorites.size);
   if (dom.dashboardPlayCount) dom.dashboardPlayCount.textContent = formatNumber(state.play.length);
   if (dom.dashboardArtistShortcutCount) dom.dashboardArtistShortcutCount.textContent = formatNumber(artists);
-  if (dom.adminUpdatedAt) dom.adminUpdatedAt.textContent = state.generatedAt ? `Atualizada hoje às ${formatTime(state.generatedAt)}` : "Atualizada automaticamente";
+  if (dom.dashboardTimer) dom.dashboardTimer.textContent = "00:15:30";
+  if (dom.sidebarTimer) dom.sidebarTimer.textContent = "00:15:30";
+  if (dom.heroProgressBar) dom.heroProgressBar.style.width = `${playProgress}%`;
+  if (dom.heroProgressLabel) dom.heroProgressLabel.textContent = `${playProgress}%`;
+  if (dom.adminUpdatedAt) dom.adminUpdatedAt.textContent = state.generatedAt ? `Atualizada hoje \u00E0s ${formatTime(state.generatedAt)}` : "Atualizada automaticamente";
 }
 
 function savePlay() {
   localStorage.setItem("mdl.playEnsaio", JSON.stringify(state.play));
+  if (state.playUpdatedAt) localStorage.setItem("mdl.playEnsaioUpdatedAt", state.playUpdatedAt);
+  else localStorage.removeItem("mdl.playEnsaioUpdatedAt");
+  if (state.playDirty) localStorage.setItem("mdl.playEnsaioDirty", "true");
+  else localStorage.removeItem("mdl.playEnsaioDirty");
   renderDashboard();
   updateStats();
+}
+
+function getPlayableSongIdSet() {
+  if (!state.catalogReady) return null;
+  return new Set(state.songs.map((song) => song.id).filter(Boolean));
+}
+
+function getPlaySignature(items = state.play) {
+  return JSON.stringify(normalizePlayEntries(items, null).map((entry) => `${entry.id}:${entry.key || ""}`));
+}
+
+async function pushSharedPlay({ silent = false } = {}) {
+  if (!isLeader() || !state.auth?.token || !state.catalogReady) return false;
+
+  try {
+    const response = await fetch("/api/play", {
+      method: "PUT",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ items: state.play })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "play-sync-failed");
+
+    state.play = normalizePlayEntries(data.play);
+    state.playUpdatedAt = data.updatedAt || "";
+    state.playDirty = false;
+    savePlay();
+    return true;
+  } catch {
+    state.playDirty = true;
+    savePlay();
+    if (!silent) toast("Play salvo neste aparelho e sera sincronizado quando a conexao voltar");
+    return false;
+  }
+}
+
+async function syncSharedPlay({ allowLeaderSeed = false, silent = true } = {}) {
+  if (!state.auth?.token || !state.catalogReady) return false;
+
+  const localPlay = normalizePlayEntries(state.play);
+  if (getPlaySignature(localPlay) !== getPlaySignature(state.play)) {
+    state.play = localPlay;
+    savePlay();
+  }
+
+  try {
+    const response = await fetch(`/api/play?v=${Date.now()}`, {
+      headers: authHeaders()
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "play-fetch-failed");
+
+    const remotePlay = normalizePlayEntries(data.play);
+    const remoteUpdatedAt = data.updatedAt || "";
+    const localSignature = getPlaySignature(localPlay);
+    const remoteSignature = getPlaySignature(remotePlay);
+
+    if (allowLeaderSeed && isLeader() && localSignature && !remoteSignature && !remoteUpdatedAt) {
+      return pushSharedPlay({ silent });
+    }
+
+    if (state.playDirty && isLeader()) {
+      const canPublishLocal = !state.playUpdatedAt || state.playUpdatedAt === remoteUpdatedAt || remoteSignature === localSignature;
+      if (canPublishLocal) {
+        return pushSharedPlay({ silent: true });
+      }
+    }
+
+    if (remoteSignature !== localSignature || remoteUpdatedAt !== state.playUpdatedAt) {
+      state.play = remotePlay;
+      state.playUpdatedAt = remoteUpdatedAt;
+      state.playDirty = false;
+      savePlay();
+      return true;
+    }
+
+    if (state.playDirty) {
+      state.playDirty = false;
+      savePlay();
+    }
+    return false;
+  } catch {
+    if (!silent && state.playDirty) toast("Sem conexao para atualizar o Play compartilhado");
+    return false;
+  }
 }
 
 function findSong(id) {
@@ -2021,15 +2532,29 @@ function getArtistOfflineInfo(artist) {
   return { songs, saved, total: songs.length };
 }
 
-function migratePlay(items) {
+function normalizePlayEntries(items, validSongIds = getPlayableSongIdSet()) {
   if (!Array.isArray(items)) return [];
-  return items
-    .map((item) => {
-      if (typeof item === "string") return { id: item, key: null };
-      if (item && typeof item.id === "string") return { id: item.id, key: item.key || null };
-      return null;
-    })
-    .filter(Boolean);
+
+  const normalized = [];
+  const seen = new Set();
+  for (const item of items) {
+    const rawId = typeof item === "string" ? item : item?.id;
+    const id = typeof rawId === "string" ? rawId.trim() : "";
+    if (!id || seen.has(id)) continue;
+    if (validSongIds && !validSongIds.has(id)) continue;
+
+    const key = typeof item === "object" && item && typeof item.key === "string"
+      ? item.key.trim() || null
+      : null;
+
+    normalized.push({ id, key });
+    seen.add(id);
+  }
+  return normalized;
+}
+
+function migratePlay(items) {
+  return normalizePlayEntries(items, null);
 }
 
 async function downloadSongForOffline(id) {
@@ -2037,9 +2562,9 @@ async function downloadSongForOffline(id) {
   const saved = await downloadSingleSongForOffline(id);
   if (saved) {
     renderOfflineStatus();
-    toast("Cifra disponível offline");
+    toast("Cifra dispon\u00EDvel offline");
   } else {
-    toast("Não foi possível baixar offline");
+    toast("N\u00E3o foi poss\u00EDvel baixar offline");
   }
 }
 
@@ -2048,7 +2573,7 @@ async function downloadArtistForOffline(artist) {
   if (!artistName.trim() || state.offlineArtistDownloads.has(artistName)) return;
 
   const { songs, saved, total } = getArtistOfflineInfo(artistName);
-  if (!total) return toast("Artista não encontrado");
+  if (!total) return toast("Artista n\u00E3o encontrado");
 
   const pendingIds = songs
     .map((song) => song.id)
@@ -2056,7 +2581,7 @@ async function downloadArtistForOffline(artist) {
 
   if (!pendingIds.length) {
     renderArtists();
-    return toast("Biblioteca já está offline");
+    return toast("Biblioteca j\u00E1 est\u00E1 offline");
   }
 
   state.offlineArtistDownloads.set(artistName, { saved, total });
@@ -2076,7 +2601,7 @@ async function downloadArtistForOffline(artist) {
     const info = getArtistOfflineInfo(artistName);
     toast(info.saved >= info.total ? "Biblioteca offline pronta" : `${info.saved}/${info.total} cifras offline`);
   } catch {
-    toast("Não foi possível baixar toda a biblioteca");
+    toast("N\u00E3o foi poss\u00EDvel baixar toda a biblioteca");
   } finally {
     state.offlineArtistDownloads.delete(artistName);
     renderOfflineStatus();
@@ -2540,20 +3065,20 @@ function buildChordGuide(chordName) {
   if (shape?.label) metaParts.push(shape.label);
   if (parsed.bass) metaParts.push(`baixo em ${parsed.bass}`);
 
-  let hint = "Toque em outro acorde da cifra para ver a próxima posição.";
+  let hint = "Toque em outro acorde da cifra para ver a pr\u00F3xima posi\u00E7\u00E3o.";
   if (!shape) {
-    hint = `Ainda não há diagrama pronto para ${parsed.name}, mas as notas do acorde já apareceram aqui.`;
+    hint = `Ainda n\u00E3o h\u00E1 diagrama pronto para ${parsed.name}, mas as notas do acorde j\u00E1 apareceram aqui.`;
   } else if (shape.approximate && parsed.bass && !shape.handlesBass) {
-    hint = `Mostrando uma base compatível. Ao tocar, destaque o baixo em ${parsed.bass}.`;
+    hint = `Mostrando uma base compat\u00EDvel. Ao tocar, destaque o baixo em ${parsed.bass}.`;
   } else if (shape.approximate) {
-    hint = "Mostrando uma base compatível para você ajustar a extensão direto no instrumento.";
+    hint = "Mostrando uma base compat\u00EDvel para voc\u00EA ajustar a extens\u00E3o direto no instrumento.";
   } else if (parsed.bass && !shape.handlesBass) {
     hint = `Use a forma principal e destaque o baixo em ${parsed.bass}.`;
   }
 
   return {
     name: parsed.name,
-    meta: metaParts.join(" · "),
+    meta: metaParts.join(" \u00B7 "),
     notes: buildChordNotes(parsed),
     shape,
     hint
@@ -2562,7 +3087,7 @@ function buildChordGuide(chordName) {
 
 function renderChordGuideDiagram(guide) {
   if (!guide.shape) {
-    return `<div class="chord-guide-empty">Diagrama ainda não disponível para esse tipo de acorde.</div>`;
+    return `<div class="chord-guide-empty">Diagrama ainda n\u00E3o dispon\u00EDvel para esse tipo de acorde.</div>`;
   }
 
   return `
@@ -2618,7 +3143,7 @@ function isStringCoveredByBarre(shape, stringIndex, fret) {
 
 function parseChordName(chordName) {
   const normalized = String(chordName || "").trim().replace(/\s+/g, "");
-  const match = normalized.match(/^([A-G](?:#|b)?)([0-9A-Za-zº°+\-#b()]*)(?:\/([A-G](?:#|b)?))?$/);
+  const match = normalized.match(/^([A-G](?:#|b)?)([0-9A-Za-z\u00BA\u00B0+\-#b()]*)(?:\/([A-G](?:#|b)?))?$/);
   if (!match) return null;
 
   const [, root, suffix = "", bass] = match;
@@ -2638,7 +3163,7 @@ function detectChordFamily(suffix) {
   if (!compact) return "major";
   if (/sus2/i.test(compact)) return "sus2";
   if (/sus4/i.test(compact) || /\(4\)/.test(compact)) return compact.includes("7") ? "7sus4" : "sus4";
-  if (/dim/i.test(compact) || /[º°]/.test(compact)) return "dim";
+  if (/dim/i.test(compact) || /[\u00BA\u00B0]/.test(compact)) return "dim";
   if (/aug/i.test(compact) || compact.includes("+")) return "aug";
   if (/maj7/i.test(compact) || /7M/.test(compact) || /M7/.test(compact)) return "maj7";
   if (/^m/i.test(compact) && compact.includes("7") && compact.includes("9")) return "m9";
@@ -2662,7 +3187,7 @@ function detectChordFamilyNormalized(suffix) {
   if (!compact) return "major";
   if (/sus2/i.test(compact)) return "sus2";
   if (/sus4/i.test(compact) || /\(4\)/.test(compact)) return compact.includes("7") ? "7sus4" : "sus4";
-  if (/dim/i.test(compact) || /[ÂºÂ°]/.test(compact)) return "dim";
+  if (/dim/i.test(compact) || /[\u00BA\u00B0]/.test(compact)) return "dim";
   if (/aug/i.test(compact) || compact.includes("+")) return "aug";
   if (/maj7/i.test(compact) || /7M/.test(compact) || /M7/.test(compact)) return "maj7";
   if (isMinor && hasNine) return hasAddNine ? "madd9" : "m9";
@@ -2685,6 +3210,10 @@ function buildChordNotes(parsed) {
 
 function resolveChordShape(parsed) {
   const exactKey = `${parsed.root}${parsed.familyMeta.lookup}${parsed.bass ? `/${parsed.bass}` : ""}`;
+  const customExactShape = state.customChordShapes?.[parsed.name] || state.customChordShapes?.[exactKey];
+  if (customExactShape) {
+    return normalizeChordShape(customExactShape, { approximate: false, handlesBass: true });
+  }
   const exactShape = CHORD_SHAPE_LIBRARY[exactKey];
   if (exactShape) {
     return normalizeChordShape(exactShape, { approximate: false, handlesBass: true });
@@ -2839,7 +3368,7 @@ function inferKeyFromHtml(html) {
   template.innerHTML = html;
   const firstChordNode = template.content.querySelector("i");
   const text = firstChordNode ? firstChordNode.textContent : template.content.textContent;
-  const match = String(text || "").match(/\b([A-G](?:#|b)?)(?:[0-9A-Za-zº°+\-#b()]*)?(?:\/[A-G](?:#|b)?)?\b/);
+  const match = String(text || "").match(/\b([A-G](?:#|b)?)(?:[0-9A-Za-z\u00BA\u00B0+\-#b()]*)?(?:\/[A-G](?:#|b)?)?\b/);
   return match ? match[1] : null;
 }
 
