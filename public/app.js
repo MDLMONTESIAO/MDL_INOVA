@@ -185,6 +185,7 @@ const state = {
   devCurrentSongId: null,
   devPreviewTranspose: 0,
   devPreviewSingerMode: false,
+  devEditorMode: localStorage.getItem("mdl.devEditorMode") || "text",
   devChordName: "C",
   devChordFrets: ["x", 3, 2, 0, 1, 0],
   devChordBaseFret: 1,
@@ -339,6 +340,10 @@ const dom = {
   devSongKey: document.getElementById("devSongKey"),
   devSongCollection: document.getElementById("devSongCollection"),
   devSongHtml: document.getElementById("devSongHtml"),
+  devEditorTextMode: document.getElementById("devEditorTextMode"),
+  devEditorHtmlMode: document.getElementById("devEditorHtmlMode"),
+  devSongEditorLabel: document.getElementById("devSongEditorLabel"),
+  devEditorHelp: document.getElementById("devEditorHelp"),
   devSongStatus: document.getElementById("devSongStatus"),
   devPreviewTitle: document.getElementById("devPreviewTitle"),
   devChordPreview: document.getElementById("devChordPreview"),
@@ -1251,6 +1256,7 @@ async function handleClick(event) {
     if (action === "dev-exit") return exitDevMode();
     if (action === "dev-tab") return showDevTab(button.dataset.tab);
     if (action === "dev-open-song") return openDevSong(id);
+    if (action === "dev-editor-mode") return setDevEditorMode(button.dataset.mode);
     if (action === "dev-preview-song") return renderDevPreview();
     if (action === "dev-save-song") return saveDevSong();
     if (action === "dev-restore-song") return restoreDevSongVersion();
@@ -2452,15 +2458,46 @@ function exitDevMode() {
 }
 function devHeaders(extra = {}) { return authHeaders({ ...extra, ...(state.devToken ? { "X-Dev-Token": state.devToken } : {}) }); }
 async function loadDevChordLibrary() { if (!state.devToken) return; try { const response = await fetch(`/api/dev/chords?v=${Date.now()}`, { headers: devHeaders() }); const data = await response.json().catch(() => ({})); if (response.ok && data.chords && typeof data.chords === "object") { state.customChordShapes = data.chords; Object.assign(CHORD_SHAPE_LIBRARY, data.chords); } } catch {} }
-function renderDevWorkspace() { if (!state.devMode) return; renderDevSongList(); renderDevChordList(); renderDevChordEditor(); }
+function renderDevWorkspace() { if (!state.devMode) return; syncDevEditorModeUi(); renderDevSongList(); renderDevChordList(); renderDevChordEditor(); }
 function showDevTab(tab = "cifras") { const key = tab === "acordes" ? "acordes" : "cifras"; document.querySelectorAll(".dev-card").forEach((button) => button.classList.toggle("active", button.dataset.tab === key)); document.getElementById("devTabCifras")?.classList.toggle("active", key === "cifras"); document.getElementById("devTabAcordes")?.classList.toggle("active", key === "acordes"); }
+function setDevEditorMode(mode) {
+  const nextMode = mode === "html" ? "html" : "text";
+  if (nextMode === state.devEditorMode) return syncDevEditorModeUi();
+  if (dom.devSongHtml) {
+    const current = dom.devSongHtml.value || "";
+    dom.devSongHtml.value = nextMode === "text" ? htmlToEditableSheetText(current) : sheetTextToHtml(current);
+  }
+  state.devEditorMode = nextMode;
+  localStorage.setItem("mdl.devEditorMode", nextMode);
+  syncDevEditorModeUi();
+  renderDevPreview();
+}
+function syncDevEditorModeUi() {
+  const textMode = state.devEditorMode !== "html";
+  dom.devEditorTextMode?.classList.toggle("active", textMode);
+  dom.devEditorHtmlMode?.classList.toggle("active", !textMode);
+  if (dom.devSongEditorLabel) dom.devSongEditorLabel.textContent = textMode ? "Cifra / letra em texto" : "Cifra / letra em HTML";
+  if (dom.devEditorHelp) dom.devEditorHelp.textContent = textMode
+    ? "Digite a cifra como texto comum. Linhas de acordes serão convertidas automaticamente para o leitor."
+    : "Modo avançado: edite o HTML usado internamente pelo leitor.";
+  if (dom.devSongHtml) {
+    dom.devSongHtml.classList.toggle("is-html-mode", !textMode);
+    dom.devSongHtml.placeholder = textMode
+      ? "[Intro] F#m E D Bm7\n\nF#m              E\nSobre o trono de justiça"
+      : "<span class=\"part\">Intro</span>\n<i>F#m     E     D     Bm7</i>";
+  }
+}
 function renderDevSongList() { if (!dom.devSongList || !state.devMode) return; const query = normalize(dom.devSongSearch?.value || ""); const songs = state.songs.filter((song) => !query || normalize(`${song.title} ${song.artist} ${song.collection || ""}`).includes(query)).slice(0, 120); dom.devSongList.innerHTML = songs.length ? songs.map((song) => `<button type="button" data-action="dev-open-song" data-id="${escapeAttr(song.id)}" class="${song.id === state.devCurrentSongId ? "active" : ""}"><strong>${escapeHtml(song.title)}</strong><span>${escapeHtml(song.artist)}</span></button>`).join("") : `<div class="dev-empty">Nenhuma m\u00FAsica encontrada.</div>`; }
 async function openDevEditorFromReader() { if (!state.currentSongId) return; await openDevSong(state.currentSongId, true); }
-async function openDevSong(id, goToDev = false) { if (!state.devMode) return; const song = findSong(id); if (!song) return; state.devCurrentSongId = id; state.devPreviewTranspose = 0; if (dom.devSongStatus) dom.devSongStatus.textContent = "Carregando m\u00FAsica..."; try { const response = await fetch(`/api/songs/${encodeURIComponent(id)}?v=${Date.now()}`); const data = response.ok ? await response.json() : {}; if (dom.devSongTitle) dom.devSongTitle.value = data.title || song.title || ""; if (dom.devSongArtist) dom.devSongArtist.value = data.artist || song.artist || ""; if (dom.devSongKey) dom.devSongKey.value = data.key || song.key || ""; if (dom.devSongCollection) dom.devSongCollection.value = data.collection || song.collection || ""; if (dom.devSongHtml) dom.devSongHtml.value = normalizeSheetContent(data.html || sampleSheets[id] || ""); if (dom.devSongStatus) dom.devSongStatus.textContent = ""; } catch { if (dom.devSongHtml) dom.devSongHtml.value = sampleSheets[id] || ""; if (dom.devSongStatus) dom.devSongStatus.textContent = "Usando vers\u00E3o local/offline."; } renderDevSongList(); renderDevPreview(); showDevTab("cifras"); if (goToDev) showView("dev"); }
-function renderDevPreview() { if (!dom.devChordPreview) return; const rawHtml = dom.devSongHtml?.value || ""; const title = dom.devSongTitle?.value || "Selecione uma m\u00FAsica"; if (dom.devPreviewTitle) dom.devPreviewTitle.textContent = title; const html = state.devPreviewSingerMode ? stripChordsToLyrics(rawHtml) : decorateChordHtml(transposeHtml(rawHtml, state.devPreviewTranspose)); dom.devChordPreview.innerHTML = `<pre>${html || "Abra uma m\u00FAsica para testar a leitura."}</pre>`; }
+async function openDevSong(id, goToDev = false) { if (!state.devMode) return; const song = findSong(id); if (!song) return; state.devCurrentSongId = id; state.devPreviewTranspose = 0; syncDevEditorModeUi(); if (dom.devSongStatus) dom.devSongStatus.textContent = "Carregando m\u00FAsica..."; try { const response = await fetch(`/api/songs/${encodeURIComponent(id)}?v=${Date.now()}`); const data = response.ok ? await response.json() : {}; const rawSheet = normalizeSheetContent(data.html || sampleSheets[id] || ""); if (dom.devSongTitle) dom.devSongTitle.value = data.title || song.title || ""; if (dom.devSongArtist) dom.devSongArtist.value = data.artist || song.artist || ""; if (dom.devSongKey) dom.devSongKey.value = data.key || song.key || ""; if (dom.devSongCollection) dom.devSongCollection.value = data.collection || song.collection || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? rawSheet : htmlToEditableSheetText(rawSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = ""; } catch { const fallbackSheet = sampleSheets[id] || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? fallbackSheet : htmlToEditableSheetText(fallbackSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = "Usando vers\u00E3o local/offline."; } renderDevSongList(); renderDevPreview(); showDevTab("cifras"); if (goToDev) showView("dev"); }
+function getDevSongHtmlForPreview() {
+  const source = dom.devSongHtml?.value || "";
+  return state.devEditorMode === "html" ? source : sheetTextToHtml(source);
+}
+function renderDevPreview() { if (!dom.devChordPreview) return; const rawHtml = getDevSongHtmlForPreview(); const title = dom.devSongTitle?.value || "Selecione uma m\u00FAsica"; if (dom.devPreviewTitle) dom.devPreviewTitle.textContent = title; const html = state.devPreviewSingerMode ? stripChordsToLyrics(rawHtml) : decorateChordHtml(transposeHtml(rawHtml, state.devPreviewTranspose)); dom.devChordPreview.innerHTML = `<pre>${html || "Abra uma m\u00FAsica para testar a leitura."}</pre>`; }
 function toggleDevPreviewSinger() { state.devPreviewSingerMode = !state.devPreviewSingerMode; renderDevPreview(); }
 function transposeDevPreview(amount, reset = false) { state.devPreviewTranspose = reset ? 0 : state.devPreviewTranspose + amount; renderDevPreview(); }
-async function saveDevSong() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvando..."; try { const response = await fetch("/api/dev/save-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId, title: dom.devSongTitle?.value || "", artist: dom.devSongArtist?.value || "", key: dom.devSongKey?.value || "", collection: dom.devSongCollection?.value || "", html: dom.devSongHtml?.value || "" }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-failed"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvo com versionamento."; toast("Cifra salva"); await refreshLibrary(); if (state.currentSongId === state.devCurrentSongId) await openSong(state.devCurrentSongId); } catch { if (dom.devSongStatus) dom.devSongStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar cifra"); } }
+async function saveDevSong() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvando..."; try { const response = await fetch("/api/dev/save-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId, title: dom.devSongTitle?.value || "", artist: dom.devSongArtist?.value || "", key: dom.devSongKey?.value || "", collection: dom.devSongCollection?.value || "", html: getDevSongHtmlForPreview() }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-failed"); if (dom.devSongStatus) dom.devSongStatus.textContent = state.devEditorMode === "html" ? "Salvo com versionamento." : "Texto convertido e salvo com versionamento."; toast("Cifra salva"); await refreshLibrary(); if (state.currentSongId === state.devCurrentSongId) await openSong(state.devCurrentSongId); } catch { if (dom.devSongStatus) dom.devSongStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar cifra"); } }
 async function restoreDevSongVersion() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (!confirm("Restaurar a vers\u00E3o anterior desta m\u00FAsica?")) return; try { const response = await fetch("/api/dev/restore-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "restore-failed"); await openDevSong(state.devCurrentSongId); await refreshLibrary(); toast("Vers\u00E3o restaurada"); } catch { toast("N\u00E3o h\u00E1 vers\u00E3o anterior para restaurar"); } }
 function getDevChordKeys() { return Object.keys(CHORD_SHAPE_LIBRARY).sort((a, b) => a.localeCompare(b, "pt-BR")); }
 function renderDevChordList() { if (!dom.devChordList || !state.devMode) return; const query = normalize(dom.devChordSearch?.value || ""); const chords = getDevChordKeys().filter((name) => !query || normalize(name).includes(query)).slice(0, 180); dom.devChordList.innerHTML = chords.length ? chords.map((name) => `<button type="button" data-action="dev-open-chord" data-chord="${escapeAttr(name)}" class="${name === state.devChordName ? "active" : ""}"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(CHORD_SHAPE_LIBRARY[name]?.label || "Forma sugerida")}</span></button>`).join("") : `<div class="dev-empty">Nenhum acorde encontrado.</div>`; }
@@ -2487,7 +2524,7 @@ function newDevChord() { state.devChordName = ""; state.devChordFrets = ["x", "x
 function clearDevChord() { state.devChordFrets = ["x", "x", "x", "x", "x", "x"]; state.devChordBarres = []; if (dom.devChordBarre) dom.devChordBarre.value = ""; renderDevChordEditor(); }
 function syncDevChordFromInputs() { state.devChordName = String(dom.devChordNameInput?.value || "").trim(); state.devChordBaseFret = Math.max(1, Math.min(15, Number(dom.devChordBaseFret?.value || 1))); state.devChordBarres = parseDevBarres(dom.devChordBarre?.value || ""); renderDevChordPreview(); }
 function renderDevChordEditor() { if (!dom.devChordGrid || !state.devMode) return; const rows = [1, 2, 3, 4, 5]; dom.devChordGrid.innerHTML = `<div class="dev-chord-grid-lines" aria-hidden="true">${STRING_LABELS.map((_, index) => `<span class="dev-string-line" style="--string:${index}"></span>`).join("")}${[0,1,2,3,4,5].map((fret) => `<span class="dev-fret-line" style="--fret:${fret}"></span>`).join("")}</div>${rows.map((row) => STRING_LABELS.map((_, stringIndex) => { const absoluteFret = state.devChordBaseFret + row - 1; const active = state.devChordFrets[stringIndex] === absoluteFret; return `<button type="button" class="dev-fret-dot${active ? " active" : ""}" style="--string:${stringIndex}; --fret:${row}" data-string="${stringIndex}" data-fret="${absoluteFret}" aria-label="Corda ${stringIndex + 1}, casa ${absoluteFret}"></button>`; }).join("")).join("")}`; dom.devChordGrid.querySelectorAll(".dev-fret-dot").forEach((button) => { button.addEventListener("click", () => { const stringIndex = Number(button.dataset.string); const fret = Number(button.dataset.fret); state.devChordFrets[stringIndex] = state.devChordFrets[stringIndex] === fret ? "x" : fret; renderDevChordEditor(); }); }); if (dom.devChordStringModes) { dom.devChordStringModes.innerHTML = STRING_LABELS.map((label, index) => { const value = state.devChordFrets[index]; return `<button type="button" data-string="${index}" class="${value === 0 ? "open" : value === "x" ? "muted" : ""}">${escapeHtml(label)}: ${value === 0 ? "O" : value === "x" ? "X" : value}</button>`; }).join(""); dom.devChordStringModes.querySelectorAll("button").forEach((button) => { button.addEventListener("click", () => { const index = Number(button.dataset.string); state.devChordFrets[index] = state.devChordFrets[index] === 0 ? "x" : 0; renderDevChordEditor(); }); }); } renderDevChordPreview(); }
-function renderDevChordPreview() { if (!dom.devChordPreviewDiagram) return; const name = String(dom.devChordNameInput?.value || state.devChordName || "Acorde").trim(); if (dom.devChordPreviewName) dom.devChordPreviewName.textContent = name || "Acorde"; const shape = normalizeChordShape({ frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada" }); dom.devChordPreviewDiagram.innerHTML = renderChordGuideDiagram({ shape }); }
+function renderDevChordPreview() { if (!dom.devChordPreviewDiagram) return; const name = String(dom.devChordNameInput?.value || state.devChordName || "Acorde").trim(); if (dom.devChordPreviewName) dom.devChordPreviewName.textContent = name || "Acorde"; const shape = normalizeChordShape({ frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada" }); const typedNotes = String(dom.devChordNotes?.value || "").split(/[;,]/).map((note) => note.trim()).filter(Boolean); const parsed = parseChordName(name); const notes = typedNotes.length ? typedNotes : (parsed ? buildChordNotes(parsed) : []); dom.devChordPreviewDiagram.innerHTML = renderChordGuideDiagram({ shape, notes }); }
 async function saveDevChord() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); const name = String(dom.devChordNameInput?.value || "").trim(); if (!name) return toast("Digite o nome do acorde"); syncDevChordFromInputs(); const shape = { frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada", notes: String(dom.devChordNotes?.value || "").split(",").map((note) => note.trim()).filter(Boolean) }; if (dom.devChordStatus) dom.devChordStatus.textContent = "Salvando acorde..."; try { const response = await fetch("/api/dev/save-chord", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ name, shape }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-chord-failed"); CHORD_SHAPE_LIBRARY[name] = shape; state.customChordShapes = { ...(state.customChordShapes || {}), [name]: shape }; state.devChordName = name; renderDevChordList(); renderDevChordPreview(); if (state.chordGuideOpen) refreshChordGuide(); if (dom.devChordStatus) dom.devChordStatus.textContent = "Acorde salvo. Clique em Conferir no sistema para testar."; toast("Acorde salvo"); } catch { if (dom.devChordStatus) dom.devChordStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar acorde"); } }
 function parseDevBarres(value) { return String(value || "").split(/[;,]/).map((item) => { const match = item.trim().match(/^(\d+)\s*:\s*(\d)\s*-\s*(\d)$/); if (!match) return null; return { fret: Number(match[1]), fromString: Number(match[2]), toString: Number(match[3]) }; }).filter(Boolean); }
 function formatDevBarres(barres) { return (barres || []).map((barre) => `${barre.fret}:${barre.fromString}-${barre.toString}`).join(", "); }
@@ -3100,6 +3137,82 @@ function normalizeSheetContent(html) {
   return (match ? match[1] : String(html || "")).trim();
 }
 
+function htmlToEditableSheetText(html) {
+  const source = normalizeSheetContent(html);
+  if (!/<[a-z][\s\S]*>/i.test(source)) return source;
+
+  const template = document.createElement("template");
+  template.innerHTML = source
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/div>/gi, "\n");
+
+  template.content.querySelectorAll(".part").forEach((node) => {
+    node.replaceWith(document.createTextNode(`[${(node.textContent || "").trim()}]`));
+  });
+  template.content.querySelectorAll("i").forEach((node) => {
+    node.replaceWith(document.createTextNode(node.textContent || ""));
+  });
+
+  return (template.content.textContent || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function sheetTextToHtml(text) {
+  const lines = String(text || "").replace(/\r/g, "").split("\n");
+  return lines.map((line) => convertSheetTextLineToHtml(line)).join("\n").trim();
+}
+
+function convertSheetTextLineToHtml(line) {
+  const raw = String(line || "");
+  if (!raw.trim()) return "";
+
+  const sectionMatch = raw.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+  if (sectionMatch) {
+    const [, partName, rest] = sectionMatch;
+    const partHtml = `<span class="part">${escapeHtml(partName.trim())}</span>`;
+    return rest.trim() ? `${partHtml} ${wrapChordLineAsHtml(rest)}` : partHtml;
+  }
+
+  if (isTabLine(raw) || isMostlyChordLine(raw)) return wrapChordLineAsHtml(raw);
+  return escapeHtml(raw);
+}
+
+function isTabLine(line) {
+  return /^\s*[EADGBeB]\|[-0-9hHpPbBrRsSxX\/\\|~\.\s]+$/.test(String(line || ""));
+}
+
+function isMostlyChordLine(line) {
+  const trimmed = String(line || "").trim();
+  if (!trimmed) return false;
+  if (trimmed.length > 120) return false;
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+  let chordCount = 0;
+  let otherCount = 0;
+  for (const token of tokens) {
+    const clean = token.replace(/^[|:,(]+|[|:,.);]+$/g, "");
+    if (!clean || /^[xX0-9\-\/\\|]+$/.test(clean)) continue;
+    if (parseChordName(clean)) chordCount += 1;
+    else otherCount += 1;
+  }
+  return chordCount > 0 && otherCount === 0;
+}
+
+function wrapChordLineAsHtml(line) {
+  return String(line || "").split(/(\s+)/).map((segment) => {
+    if (!segment) return "";
+    if (/^\s+$/.test(segment)) return segment;
+    const prefix = segment.match(/^[|:,(]+/)?.[0] || "";
+    const suffix = segment.match(/[|:,.);]+$/)?.[0] || "";
+    const core = segment.slice(prefix.length, segment.length - suffix.length);
+    if (parseChordName(core)) return `${escapeHtml(prefix)}<i>${escapeHtml(core)}</i>${escapeHtml(suffix)}`;
+    return escapeHtml(segment);
+  }).join("");
+}
+
 function decorateChordHtml(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -3194,12 +3307,9 @@ function buildChordGuide(chordName) {
 }
 
 function renderChordGuideDiagram(guide) {
-  if (!guide.shape) {
-    return `<div class="chord-guide-empty">Diagrama ainda n\u00E3o dispon\u00EDvel para esse tipo de acorde.</div>`;
-  }
-
-  return `
+  const guitarDiagram = guide.shape ? `
     <div class="chord-diagram-card">
+      <div class="chord-layout-label">Viol\u00E3o / guitarra</div>
       <div class="chord-diagram-top">${renderChordMarkers(guide.shape.frets)}</div>
       <div class="chord-diagram-body${guide.shape.baseFret === 1 ? " is-open" : ""}">
         ${guide.shape.baseFret > 1 ? `<span class="chord-base-fret">${guide.shape.baseFret}</span>` : ""}
@@ -3209,6 +3319,39 @@ function renderChordGuideDiagram(guide) {
         ${renderChordDots(guide.shape)}
       </div>
       <div class="chord-string-labels">${STRING_LABELS.map((label) => `<span>${label}</span>`).join("")}</div>
+    </div>
+  ` : `<div class="chord-guide-empty">Diagrama ainda n\u00E3o dispon\u00EDvel para esse tipo de acorde.</div>`;
+
+  const keyboard = Array.isArray(guide.notes) && guide.notes.length ? renderPianoKeyboard(guide.notes) : "";
+  return `<div class="chord-layout-stack">${guitarDiagram}${keyboard}</div>`;
+}
+
+function renderPianoKeyboard(notes = []) {
+  const activeIndexes = new Set(notes.map((note) => NOTE_INDEX[note]).filter((index) => index !== undefined));
+  const keys = [
+    { note: "C", black: false }, { note: "C#", black: true },
+    { note: "D", black: false }, { note: "D#", black: true },
+    { note: "E", black: false },
+    { note: "F", black: false }, { note: "F#", black: true },
+    { note: "G", black: false }, { note: "G#", black: true },
+    { note: "A", black: false }, { note: "A#", black: true },
+    { note: "B", black: false }
+  ];
+  const whiteIndexByNote = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+  let whiteIndex = -1;
+  return `
+    <div class="piano-card">
+      <div class="chord-layout-label">Teclado / piano</div>
+      <div class="piano-keyboard" aria-label="Notas no teclado">
+        ${keys.map((key) => {
+          const index = NOTE_INDEX[key.note];
+          if (!key.black) whiteIndex += 1;
+          const keyWhiteIndex = key.black ? whiteIndexByNote[key.note[0]] : whiteIndex;
+          const active = activeIndexes.has(index);
+          return `<span class="piano-key ${key.black ? "black" : "white"} ${active ? "active" : ""}" style="--key:${keyWhiteIndex};" title="${key.note}"><b>${key.note}</b></span>`;
+        }).join("")}
+      </div>
+      <p class="piano-hint">As teclas destacadas mostram as notas principais do acorde.</p>
     </div>
   `;
 }

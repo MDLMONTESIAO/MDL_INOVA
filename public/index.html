@@ -10,7 +10,7 @@
   <title>Acervo Musical</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/assets/logo-inova.jpg">
-  <link rel="stylesheet" href="/styles.css?v=20260425-exact-avatar">
+  <link rel="stylesheet" href="/styles.css?v=20260427-text-editor-piano">
   <script>
     (() => {
       const savedTheme = localStorage.getItem("mdl.theme");
@@ -484,7 +484,12 @@
                   <label class="dev-field"><span>Tom base</span><input id="devSongKey" type="text" placeholder="C, D, Em..."></label>
                   <label class="dev-field"><span>Coleção</span><input id="devSongCollection" type="text"></label>
                 </div>
-                <label class="dev-field dev-field-editor"><span>Cifra / letra</span><textarea id="devSongHtml" spellcheck="false" placeholder="Abra uma música para editar..."></textarea></label>
+                <div class="dev-editor-mode-row" role="group" aria-label="Modo de edição da cifra">
+                  <button type="button" class="active" data-action="dev-editor-mode" data-mode="text" id="devEditorTextMode">Texto editável</button>
+                  <button type="button" data-action="dev-editor-mode" data-mode="html" id="devEditorHtmlMode">HTML avançado</button>
+                </div>
+                <label class="dev-field dev-field-editor"><span id="devSongEditorLabel">Cifra / letra em texto</span><textarea id="devSongHtml" spellcheck="false" placeholder="[Intro] F#m E D Bm7&#10;&#10;F#m              E&#10;Sobre o trono de justiça"></textarea></label>
+                <p class="dev-editor-help" id="devEditorHelp">Digite a cifra como texto comum. Linhas de acordes, como F#m E D Bm7, serão convertidas automaticamente para o leitor.</p>
                 <div class="dev-actions-row"><button type="button" data-action="dev-preview-song">Visualizar</button><button type="button" data-action="dev-save-song" class="primary">Salvar</button><button type="button" data-action="dev-restore-song">Restaurar versão</button></div>
                 <p class="dev-status" id="devSongStatus" aria-live="polite"></p>
               </section>
@@ -684,6 +689,6 @@
     </form>
   </section>
 
-  <script src="/app.js?v=20260425-exact-avatar"></script>
+  <script src="/app.js?v=20260427-text-editor-piano"></script>
 </body>
 </html>
