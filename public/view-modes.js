@@ -1,14 +1,20 @@
 (() => {
   const MODE_KEY = "mdl.songViewMode";
   const DEFAULT_MODE = "large";
+
   const MODES = [
     { id: "list", label: "Lista" },
-    { id: "compact", label: "Ícones pequenos" },
-    { id: "large", label: "Ícones grandes" }
+    { id: "compact", label: "Miniaturas" },
+    { id: "large", label: "Cards grandes" }
   ];
 
   function isTabletOrPc() {
-    return window.matchMedia("(min-width: 768px)").matches;
+    const width = Math.min(window.innerWidth || 0, window.screen?.width || window.innerWidth || 0);
+    const hasTabletWidth = window.matchMedia("(min-width: 600px)").matches;
+    const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+    const isCoarseTablet = window.matchMedia("(pointer: coarse)").matches && width >= 600;
+
+    return hasTabletWidth || hasFinePointer || isCoarseTablet;
   }
 
   function getStoredMode() {
@@ -17,12 +23,15 @@
   }
 
   function applyMode() {
-    const mode = isTabletOrPc() ? getStoredMode() : DEFAULT_MODE;
+    const mode = isTabletOrPc() ? getStoredMode() : "list";
+
     document.documentElement.dataset.songViewMode = mode;
+    document.body.dataset.songViewMode = mode;
 
     ["songList", "favoriteList", "playList"].forEach((id) => {
       const list = document.getElementById(id);
       if (!list) return;
+
       list.classList.remove("mdl-mode-list", "mdl-mode-compact", "mdl-mode-large");
       list.classList.add(`mdl-mode-${mode}`);
     });
@@ -31,6 +40,28 @@
       const active = button.dataset.mode === mode;
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    refreshSongThumbs();
+  }
+
+  function refreshSongThumbs() {
+    document.querySelectorAll(".song-card").forEach((card) => {
+      const img =
+        card.querySelector(".song-cover img") ||
+        card.querySelector(".artist-thumb img") ||
+        card.querySelector("img");
+
+      if (!img) return;
+
+      const src = img.currentSrc || img.src;
+      if (!src) return;
+
+      card.style.setProperty("--mdl-song-thumb", `url("${src}")`);
+
+      if (!card.style.backgroundImage || card.style.backgroundImage === "none") {
+        card.style.backgroundImage = `linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.76)), url("${src}")`;
+      }
     });
   }
 
@@ -77,10 +108,35 @@
     makeToolbar();
     applyMode();
 
-    const observer = new MutationObserver(() => applyMode());
-    observer.observe(document.body, { childList: true, subtree: true });
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(applyMode);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class", "src"]
+    });
 
     window.addEventListener("resize", applyMode);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(applyMode, 250);
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) applyMode();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        event.target.closest("[data-action='refresh']") ||
+        event.target.closest("[data-action='set-artist-thumb']") ||
+        event.target.closest("[data-action='set-cover']")
+      ) {
+        setTimeout(applyMode, 400);
+      }
+    });
   }
 
   if (document.readyState === "loading") {

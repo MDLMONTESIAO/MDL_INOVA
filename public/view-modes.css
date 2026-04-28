@@ -183,4 +183,81 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
+  /* Correções tablet retrato + thumb limpa sem tom */
+.song-key,
+.song-card .song-key,
+.song-cover .song-key,
+.artist-thumb .song-key,
+.song-cover > span:not(:only-child),
+.artist-thumb > span:not(:only-child) {
+  display: none !important;
+}
+
+/* Garante que a thumb/capa apareça no tablet em retrato também */
+@media (min-width: 600px) {
+  .song-list.mdl-mode-large .song-card,
+  .song-list.mdl-mode-compact .song-card {
+    position: relative !important;
+    isolation: isolate !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .song-list.mdl-mode-large .song-card::before,
+  .song-list.mdl-mode-compact .song-card::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -2 !important;
+    background-image: var(--mdl-song-thumb) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    opacity: .95 !important;
+  }
+
+  .song-list.mdl-mode-large .song-card::after,
+  .song-list.mdl-mode-compact .song-card::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.78)) !important;
+  }
+
+  .song-list.mdl-mode-large .song-cover,
+  .song-list.mdl-mode-compact .song-cover {
+    display: none !important;
+  }
+
+  .song-list.mdl-mode-large .song-title,
+  .song-list.mdl-mode-large .song-meta,
+  .song-list.mdl-mode-compact .song-title,
+  .song-list.mdl-mode-compact .song-meta {
+    color: #fff !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.55) !important;
+  }
+
+  .song-list.mdl-mode-large .song-meta,
+  .song-list.mdl-mode-compact .song-meta {
+    color: rgba(255,255,255,.82) !important;
+  }
+}
+
+/* Em celular mantém modo lista, como você disse que está ok */
+@media (max-width: 599px) {
+  .mdl-view-mode-toolbar {
+    display: none !important;
+  }
+
+  .song-list {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .song-card {
+    background-image: none !important;
+  }
+}
 }
