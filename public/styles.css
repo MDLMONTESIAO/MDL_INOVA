@@ -5189,4 +5189,84 @@ body.screen-reader .main-area {
     height: calc(100vh - 48px);
     max-height: calc(100vh - 48px);
   }
+  /* 
+   =========================================
+   CORREÇÕES - COLAR NO FINAL DO STYLE.CSS
+   =========================================
+*/
+
+/* 1. CORREÇÃO: FORÇAR THUMBNAILS NO TABLET RETRATO (PORTRAIT) */
+@media screen and (min-width: 600px) and (max-width: 1024px) and (orientation: portrait) {
+    .song-card,
+    .song-card .song-card-cover,
+    .song-card .cover-image,
+    .artist-thumb {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-height: 180px !important;
+        height: auto !important;
+        background-size: cover !important;
+        background-position: center !important;
+    }
+    
+    /* Força o grid a renderizar no tablet retrato */
+    .song-list,
+    #view-acervo .song-list {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    }
+}
+
+/* 2. CORREÇÃO: REMOVER O TOM (KEY BADGE) DE TODOS OS CARDS */
+.song-key,
+.key-badge,
+.tone-indicator,
+[data-key],
+.card-key,
+.song-card .key,
+.song-card [class*="key"],
+.song-card [class*="tom"],
+.song-card [class*="tone"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* 3. CORREÇÃO: BOTÃO DE REDIMENSIONAMENTO (RESIZE) NO TABLET */
+.mdl-view-mode-button,
+.resize-btn,
+.btn-resize {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer !important;
+}
+
+/* Garante que o toolbar não suma no tablet */
+@media (min-width: 768px) {
+    .mdl-view-mode-toolbar {
+        display: flex !important;
+        pointer-events: auto !important;
+    }
+    /* Remove a bolinha do tom nas thumbs/cards de músicas */
+.song-card > b,
+.song-card .song-key,
+.song-card .key-badge,
+.song-card .tone-badge,
+.song-card [data-key],
+.song-card [data-tone],
+.artist-song-card > b,
+.artist-song-card .song-key,
+.artist-song-card .key-badge,
+.artist-song-card .tone-badge {
+  display: none !important;
+}
+}
 }
