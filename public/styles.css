@@ -5115,3 +5115,78 @@ body {
     max-height: calc(100dvh - 8px) !important;
   }
 }
+
+/* =========================================================
+   CORREÇÃO FINAL - ROLAGEM DA TELA DE CIFRA
+   Mantém o layout atual e cria rolagem própria somente na cifra.
+   ========================================================= */
+body.screen-reader {
+  overflow: hidden;
+}
+
+body.screen-reader .app-shell,
+body.screen-reader .main-area {
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#view-reader.view.active {
+  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+#view-reader .reader-top,
+#view-reader .reader-media,
+#view-reader .reader-tools,
+#view-reader .tuner-panel {
+  flex: 0 0 auto;
+}
+
+#view-reader .chord-sheet {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 96px;
+}
+
+#view-reader .chord-sheet pre {
+  min-width: max-content;
+}
+
+@media (min-width: 760px) {
+  #view-reader.view.active {
+    height: calc(100vh - 44px);
+    max-height: calc(100vh - 44px);
+  }
+
+  #view-reader .chord-sheet {
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 960px) {
+  body.screen-reader {
+    overflow: hidden;
+  }
+
+  body.screen-reader .app-shell,
+  body.screen-reader .main-area {
+    height: calc(100vh - 48px);
+    min-height: calc(100vh - 48px);
+  }
+
+  #view-reader.view.active {
+    height: calc(100vh - 48px);
+    max-height: calc(100vh - 48px);
+  }
+}

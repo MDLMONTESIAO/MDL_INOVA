@@ -25,15 +25,22 @@ function main() {
 
   resetOutput();
 
+  const youtubeReports = loadYoutubeReports(validSources);
+
   const songs = [];
   for (const source of validSources) {
     const files = listFiles(source.path);
     for (const filePath of files) {
       const ext = path.extname(filePath).toLowerCase();
+      const baseName = path.basename(filePath).toLowerCase();
+      if (baseName === "_links_youtube.txt") continue;
       if (!supportedExtensions.has(ext)) continue;
 
       const html = readSongHtml(filePath, ext);
-      const song = buildSong(source, filePath, ext, html);
+      const raw = fs.readFileSync(filePath, "utf8");
+      const song = buildSong(source, filePath, ext, html, youtubeReports);
+      const youtubeUrl = extractYoutubeUrl(raw) || findYoutubeFromReport(youtubeReports, song.artist, song.title);
+      if (youtubeUrl) song.youtubeUrl = youtubeUrl;
       const record = { ...song, html };
       fs.writeFileSync(path.join(SONGS_DIR, `${song.id}.json`), JSON.stringify(record, null, 2), "utf8");
       songs.push(song);
@@ -160,7 +167,80 @@ function listFiles(folder) {
   return result;
 }
 
-function buildSong(source, filePath, ext, html) {
+
+function sanitizeYoutubeUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return "";
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?[^\s"'<>]*v=([a-zA-Z0-9_-]{8,})/i,
+    /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{8,})/i,
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{8,})/i,
+    /(?:https?:\/\/)?(?:www\.)?youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]{8,})/i
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return `https://www.youtube.com/watch?v=${match[1]}`;
+  }
+  const thumb = url.match(/ytimg\.com\/vi\/([a-zA-Z0-9_-]{8,})\//i);
+  if (thumb?.[1]) return `https://www.youtube.com/watch?v=${thumb[1]}`;
+  return "";
+}
+
+function extractYoutubeUrl(text) {
+  const source = String(text || "");
+  const patterns = [
+    /https?:\/\/(?:www\.)?youtube\.com\/watch\?[^\s"'<>]*v=[a-zA-Z0-9_-]{8,}[^\s"'<>]*/i,
+    /https?:\/\/youtu\.be\/[a-zA-Z0-9_-]{8,}[^\s"'<>]*/i,
+    /https?:\/\/(?:www\.)?youtube\.com\/embed\/[a-zA-Z0-9_-]{8,}[^\s"'<>]*/i,
+    /https?:\/\/(?:www\.)?youtube-nocookie\.com\/embed\/[a-zA-Z0-9_-]{8,}[^\s"'<>]*/i,
+    /https?:\/\/i\.ytimg\.com\/vi\/[a-zA-Z0-9_-]{8,}\/[^\s"'<>]*/i
+  ];
+  for (const pattern of patterns) {
+    const match = source.match(pattern);
+    const url = sanitizeYoutubeUrl(match?.[0]);
+    if (url) return url;
+  }
+  return "";
+}
+
+function loadYoutubeReports(sources) {
+  const reports = new Map();
+  for (const source of sources) {
+    for (const reportPath of findFilesNamed(source.path, "_links_youtube.txt")) {
+      const raw = fs.readFileSync(reportPath, "utf8");
+      const blocks = raw.split(/-{5,}/g);
+      for (const block of blocks) {
+        const title = (block.match(/Música:\s*(.+)/i) || block.match(/Musica:\s*(.+)/i))?.[1]?.trim();
+        const youtube = block.match(/YouTube:\s*(.+)/i)?.[1]?.trim();
+        const url = sanitizeYoutubeUrl(youtube);
+        if (!title || !url) continue;
+        reports.set(slugify(title), url);
+      }
+    }
+  }
+  return reports;
+}
+
+function findFilesNamed(folder, fileName) {
+  const result = [];
+  const stack = [folder];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(fullPath);
+      else if (entry.isFile() && entry.name.toLowerCase() === fileName.toLowerCase()) result.push(fullPath);
+    }
+  }
+  return result;
+}
+
+function findYoutubeFromReport(reports, artist, title) {
+  if (!reports?.size) return "";
+  return reports.get(slugify(title)) || reports.get(slugify(`${artist} ${title}`)) || "";
+}
+
+function buildSong(source, filePath, ext, html, youtubeReports) {
   const artist = source.artist || artistFromPath(source.path, filePath);
   const title = cleanTitle(path.basename(filePath, ext));
   const hash = crypto.createHash("sha1").update(filePath).digest("hex").slice(0, 10);
