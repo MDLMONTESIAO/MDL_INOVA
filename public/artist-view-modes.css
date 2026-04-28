@@ -1,0 +1,184 @@
+/* MDL - modos de visualização bonitos e funcionais para tablet/PC */
+.mdl-view-mode-toolbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .section-head .mdl-view-mode-toolbar,
+  .mdl-view-mode-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .12);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .18);
+    margin-left: auto;
+  }
+
+  :root[data-theme="light"] .mdl-view-mode-toolbar {
+    background: rgba(255, 250, 242, .96);
+    border-color: var(--line);
+  }
+
+  .mdl-view-mode-button {
+    min-height: 38px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 13px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 950;
+    white-space: nowrap;
+    transition: transform .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
+  }
+
+  .mdl-view-mode-button svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .mdl-view-mode-button:hover {
+    transform: translateY(-1px);
+    background: rgba(199, 154, 59, .16);
+    color: var(--gold-2);
+  }
+
+  :root[data-theme="light"] .mdl-view-mode-button:hover {
+    color: #8a6111;
+  }
+
+  .mdl-view-mode-button.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold-2));
+    color: #17120c;
+    box-shadow: 0 8px 18px rgba(199, 154, 59, .28);
+  }
+
+  /* Remove os textos antigos caso tenham ficado soltos de tentativa anterior */
+  .artist-view-mode-controls:not(.mdl-view-mode-toolbar),
+  .artist-display-controls:not(.mdl-view-mode-toolbar),
+  .view-mode-controls:not(.mdl-view-mode-toolbar),
+  .artist-view-toggle:not(.mdl-view-mode-toolbar) {
+    display: none !important;
+  }
+
+  /* Modo lista: leitura máxima */
+  html[data-mdl-view-mode="list"] #songList,
+  html[data-mdl-view-mode="list"] #favoriteList,
+  html[data-mdl-view-mode="list"] #artistList {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  html[data-mdl-view-mode="list"] .song-card,
+  html[data-mdl-view-mode="list"] .artist-card {
+    min-height: 74px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-radius: 14px;
+  }
+
+  html[data-mdl-view-mode="list"] .song-title,
+  html[data-mdl-view-mode="list"] .artist-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.18;
+  }
+
+  /* Ícones pequenos */
+  html[data-mdl-view-mode="small"] #songList,
+  html[data-mdl-view-mode="small"] #favoriteList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  html[data-mdl-view-mode="small"] .song-card {
+    min-height: 180px;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    align-items: end;
+    padding: 12px;
+  }
+
+  html[data-mdl-view-mode="small"] .song-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.12;
+  }
+
+  /* Ícones grandes */
+  html[data-mdl-view-mode="large"] #songList,
+  html[data-mdl-view-mode="large"] #favoriteList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 18px;
+  }
+
+  html[data-mdl-view-mode="large"] .song-card {
+    min-height: 250px;
+    border-radius: 22px;
+    overflow: hidden;
+    position: relative;
+    align-items: end;
+    padding: 14px;
+  }
+
+  html[data-mdl-view-mode="large"] .song-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.12;
+    font-size: 17px;
+  }
+
+  /* Em cards com capa, mantém os botões por cima e melhora leitura */
+  html[data-mdl-view-mode="small"] .song-main,
+  html[data-mdl-view-mode="large"] .song-main {
+    z-index: 2;
+  }
+
+  html[data-mdl-view-mode="small"] .song-actions,
+  html[data-mdl-view-mode="large"] .song-actions {
+    z-index: 3;
+    align-self: end;
+  }
+
+  html[data-mdl-view-mode="small"] .song-card::after,
+  html[data-mdl-view-mode="large"] .song-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.18) 42%, rgba(0,0,0,.72) 100%);
+    z-index: 1;
+  }
+
+  /* Remove bolinha/letra do tom nas thumbs/cards */
+  .song-card > b,
+  .song-card .song-key,
+  .song-card .key-badge,
+  .song-card .tone-badge,
+  .song-card [data-key],
+  .song-card [data-tone],
+  .artist-song-card > b,
+  .artist-song-card .song-key,
+  .artist-song-card .key-badge,
+  .artist-song-card .tone-badge {
+    display: none !important;
+  }
+}
