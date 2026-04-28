@@ -1,184 +1,209 @@
-/* MDL - modos de visualização bonitos e funcionais para tablet/PC */
-.mdl-view-mode-toolbar {
+/* MDL - modos reais de visualizacao para tablet/PC */
+.mdl-view-toolbar {
   display: none;
 }
 
-@media (min-width: 768px) {
-  .section-head .mdl-view-mode-toolbar,
-  .mdl-view-mode-toolbar {
-    display: inline-flex;
+@media (min-width: 700px) {
+  .mdl-view-toolbar {
+    display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
-    padding: 6px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .08);
-    border: 1px solid rgba(255, 255, 255, .12);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, .18);
-    margin-left: auto;
+    margin: -4px 0 14px;
   }
 
-  :root[data-theme="light"] .mdl-view-mode-toolbar {
-    background: rgba(255, 250, 242, .96);
-    border-color: var(--line);
-  }
-
-  .mdl-view-mode-button {
+  .mdl-view-button {
     min-height: 38px;
     border-radius: 999px;
+    padding: 0 13px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    padding: 0 13px;
-    background: transparent;
-    color: var(--muted);
+    background: rgba(255, 255, 255, .08);
+    color: var(--text);
+    border: 1px solid var(--line);
     font-size: 12px;
     line-height: 1;
     font-weight: 950;
-    white-space: nowrap;
-    transition: transform .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
   }
 
-  .mdl-view-mode-button svg {
+  :root[data-theme="dark"] .mdl-view-button {
+    color: #f8efe2;
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .12);
+  }
+
+  .mdl-view-button svg {
     width: 17px;
     height: 17px;
   }
 
-  .mdl-view-mode-button:hover {
-    transform: translateY(-1px);
-    background: rgba(199, 154, 59, .16);
-    color: var(--gold-2);
-  }
-
-  :root[data-theme="light"] .mdl-view-mode-button:hover {
-    color: #8a6111;
-  }
-
-  .mdl-view-mode-button.active {
+  .mdl-view-button.active {
     background: linear-gradient(135deg, var(--gold), var(--gold-2));
     color: #17120c;
-    box-shadow: 0 8px 18px rgba(199, 154, 59, .28);
+    border-color: rgba(255, 255, 255, .24);
   }
 
-  /* Remove os textos antigos caso tenham ficado soltos de tentativa anterior */
-  .artist-view-mode-controls:not(.mdl-view-mode-toolbar),
-  .artist-display-controls:not(.mdl-view-mode-toolbar),
-  .view-mode-controls:not(.mdl-view-mode-toolbar),
-  .artist-view-toggle:not(.mdl-view-mode-toolbar) {
+  body.mdl-view-mode-enabled .song-list {
+    gap: 14px !important;
+  }
+
+  /* Remove a indicacao de tom nos cards/thumbs */
+  body.mdl-view-mode-enabled .song-card > b,
+  body.mdl-view-mode-enabled .song-card .song-key,
+  body.mdl-view-mode-enabled .song-card .key-badge,
+  body.mdl-view-mode-enabled .song-card .tone-badge,
+  body.mdl-view-mode-enabled .song-card [data-key],
+  body.mdl-view-mode-enabled .song-card [data-tone] {
     display: none !important;
   }
 
-  /* Modo lista: leitura máxima */
-  html[data-mdl-view-mode="list"] #songList,
-  html[data-mdl-view-mode="list"] #favoriteList,
-  html[data-mdl-view-mode="list"] #artistList {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
+  /* MODO LISTA */
+  body.mdl-view-list #songList,
+  body.mdl-view-list #favoriteList,
+  body.mdl-view-list #artistList {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
   }
 
-  html[data-mdl-view-mode="list"] .song-card,
-  html[data-mdl-view-mode="list"] .artist-card {
-    min-height: 74px;
-    grid-template-columns: minmax(0, 1fr) auto;
-    border-radius: 14px;
+  body.mdl-view-list .song-card,
+  body.mdl-view-list .artist-card {
+    min-height: 76px !important;
+    border-radius: 14px !important;
+    padding: 10px 12px !important;
+    background-image: none !important;
+    background-color: var(--paper-2) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
   }
 
-  html[data-mdl-view-mode="list"] .song-title,
-  html[data-mdl-view-mode="list"] .artist-title {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.18;
+  /* MODO ICONES PEQUENOS */
+  body.mdl-view-small #songList,
+  body.mdl-view-small #favoriteList,
+  body.mdl-view-small #artistList {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    gap: 14px !important;
   }
 
-  /* Ícones pequenos */
-  html[data-mdl-view-mode="small"] #songList,
-  html[data-mdl-view-mode="small"] #favoriteList {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 14px;
+  body.mdl-view-small .song-card {
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: 180px !important;
+    border-radius: 18px !important;
+    padding: 12px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: end !important;
+    background-color: #11131d !important;
+    background-image:
+      linear-gradient(180deg, rgba(0,0,0,.04) 0%, rgba(0,0,0,.18) 45%, rgba(0,0,0,.88) 100%),
+      var(--mdl-card-cover) !important;
+    background-size: cover !important;
+    background-position: center !important;
   }
 
-  html[data-mdl-view-mode="small"] .song-card {
-    min-height: 180px;
-    border-radius: 18px;
-    overflow: hidden;
-    position: relative;
-    align-items: end;
-    padding: 12px;
+  body.mdl-view-small .artist-card {
+    min-height: 120px !important;
+    border-radius: 18px !important;
   }
 
-  html[data-mdl-view-mode="small"] .song-title {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.12;
+  /* MODO ICONES GRANDES */
+  body.mdl-view-large #songList,
+  body.mdl-view-large #favoriteList,
+  body.mdl-view-large #artistList {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+    gap: 18px !important;
   }
 
-  /* Ícones grandes */
-  html[data-mdl-view-mode="large"] #songList,
-  html[data-mdl-view-mode="large"] #favoriteList {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 18px;
+  body.mdl-view-large .song-card {
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: 250px !important;
+    border-radius: 22px !important;
+    padding: 16px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: end !important;
+    background-color: #11131d !important;
+    background-image:
+      linear-gradient(180deg, rgba(0,0,0,.02) 0%, rgba(0,0,0,.15) 44%, rgba(0,0,0,.90) 100%),
+      var(--mdl-card-cover) !important;
+    background-size: cover !important;
+    background-position: center !important;
   }
 
-  html[data-mdl-view-mode="large"] .song-card {
-    min-height: 250px;
-    border-radius: 22px;
-    overflow: hidden;
-    position: relative;
-    align-items: end;
-    padding: 14px;
-  }
-
-  html[data-mdl-view-mode="large"] .song-title {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.12;
-    font-size: 17px;
-  }
-
-  /* Em cards com capa, mantém os botões por cima e melhora leitura */
-  html[data-mdl-view-mode="small"] .song-main,
-  html[data-mdl-view-mode="large"] .song-main {
-    z-index: 2;
-  }
-
-  html[data-mdl-view-mode="small"] .song-actions,
-  html[data-mdl-view-mode="large"] .song-actions {
-    z-index: 3;
-    align-self: end;
-  }
-
-  html[data-mdl-view-mode="small"] .song-card::after,
-  html[data-mdl-view-mode="large"] .song-card::after {
+  body.mdl-view-small .song-card::before,
+  body.mdl-view-large .song-card::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.18) 42%, rgba(0,0,0,.72) 100%);
+    background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,.78));
+  }
+
+  body.mdl-view-small .song-card > *,
+  body.mdl-view-large .song-card > * {
+    position: relative;
     z-index: 1;
   }
 
-  /* Remove bolinha/letra do tom nas thumbs/cards */
-  .song-card > b,
-  .song-card .song-key,
-  .song-card .key-badge,
-  .song-card .tone-badge,
-  .song-card [data-key],
-  .song-card [data-tone],
-  .artist-song-card > b,
-  .artist-song-card .song-key,
-  .artist-song-card .key-badge,
-  .artist-song-card .tone-badge {
+  body.mdl-view-small .song-title,
+  body.mdl-view-large .song-title {
+    color: #fff !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.55);
+  }
+
+  body.mdl-view-small .song-meta,
+  body.mdl-view-large .song-meta {
+    color: rgba(255,255,255,.82) !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.55);
+  }
+
+  body.mdl-view-small .song-card img,
+  body.mdl-view-large .song-card img,
+  body.mdl-view-small .song-cover,
+  body.mdl-view-large .song-cover,
+  body.mdl-view-small .artist-thumb,
+  body.mdl-view-large .artist-thumb {
     display: none !important;
+  }
+
+  body.mdl-view-small .song-actions,
+  body.mdl-view-large .song-actions {
+    align-self: end !important;
+  }
+
+  body.mdl-view-small .mini-action,
+  body.mdl-view-large .mini-action {
+    background: rgba(24, 24, 34, .88) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, .12) !important;
+    backdrop-filter: blur(8px);
+  }
+
+  body.mdl-view-small .mini-action.primary,
+  body.mdl-view-large .mini-action.primary {
+    background: var(--gold) !important;
+    color: #17120c !important;
+  }
+}
+
+@media (max-width: 699px) {
+  body.mdl-view-list,
+  body.mdl-view-small,
+  body.mdl-view-large {
+    /* no celular, o layout original manda */
   }
 }
