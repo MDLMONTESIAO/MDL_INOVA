@@ -1071,6 +1071,54 @@ function getWritableSongPath(id) { const safeId = String(id || "").replace(/[^a-
 function saveSongVersion(id, currentRecord) { if (!currentRecord) return null; const safeId = String(id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!safeId) return null; fs.mkdirSync(path.join(SONG_VERSIONS_DIR, safeId), { recursive: true }); const filePath = path.join(SONG_VERSIONS_DIR, safeId, `${Date.now()}.json`); fs.writeFileSync(filePath, JSON.stringify({ savedAt: new Date().toISOString(), song: currentRecord }, null, 2), "utf8"); return filePath; }
 function getLatestSongVersion(id) { const safeId = String(id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!safeId) return null; const dir = path.join(SONG_VERSIONS_DIR, safeId); if (!fs.existsSync(dir)) return null; const files = fs.readdirSync(dir).filter((name) => name.endsWith(".json")).sort().reverse(); for (const fileName of files) { const raw = safeJsonParse(fs.readFileSync(path.join(dir, fileName), "utf8"), null); if (raw?.song) return raw.song; } return null; }
 function updateCatalogSongMetadata(updatedSong) { const sourceCatalogPath = getCatalogDbPath(); const sourceCatalog = fs.existsSync(sourceCatalogPath) ? safeJsonParse(fs.readFileSync(sourceCatalogPath, "utf8"), null) : null; if (!sourceCatalog || !Array.isArray(sourceCatalog.songs)) return; sourceCatalog.songs = sourceCatalog.songs.map((song) => String(song?.id || "") !== updatedSong.id ? song : { ...song, title: updatedSong.title, artist: updatedSong.artist, collection: updatedSong.collection, key: updatedSong.key, youtubeUrl: sanitizeYoutubeUrl(updatedSong.youtubeUrl || ""), updatedAt: updatedSong.updatedAt }); sourceCatalog.generatedAt = new Date().toISOString(); const normalizedCatalog = normalizeCatalogData(sourceCatalog); for (const filePath of getCatalogWritablePaths()) { writeJsonIfChanged(filePath, normalizedCatalog); } }
+function createSongId(title, artist) {
+  const base = `${normalizeText(artist).replace(/[^a-z0-9]+/g, "-")}-${normalizeText(title).replace(/[^a-z0-9]+/g, "-")}`
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90) || "nova-cifra";
+  let id = base;
+  while (readSongRecord(id)) {
+    id = `${base}-${crypto.randomBytes(3).toString("hex")}`;
+  }
+  return id;
+}
+function createCatalogSongRecord(payload) {
+  const title = repairPossibleMojibake(payload?.title || "").trim();
+  const artist = repairPossibleMojibake(payload?.artist || "").trim();
+  if (!title) throw new Error("missing-title");
+  if (!artist) throw new Error("missing-artist");
+  const id = createSongId(title, artist);
+  return normalizeSongRecordData({
+    id,
+    title,
+    artist,
+    collection: repairPossibleMojibake(payload?.collection || "").trim() || "cifras_multi",
+    fileType: "html",
+    key: repairPossibleMojibake(payload?.key || "").trim(),
+    youtubeUrl: sanitizeYoutubeUrl(payload?.youtubeUrl || payload?.youtube_url || ""),
+    html: repairPossibleMojibake(payload?.html || ""),
+    updatedAt: new Date().toISOString()
+  });
+}
+function addCatalogSong(newSong) {
+  const sourceCatalogPath = getCatalogDbPath();
+  const sourceCatalog = fs.existsSync(sourceCatalogPath) ? safeJsonParse(fs.readFileSync(sourceCatalogPath, "utf8"), null) : null;
+  const catalog = sourceCatalog && typeof sourceCatalog === "object" ? sourceCatalog : { name: "Acervo Musical", songs: [] };
+  const songs = Array.isArray(catalog.songs) ? catalog.songs.slice() : [];
+  songs.push({
+    id: newSong.id,
+    title: newSong.title,
+    artist: newSong.artist,
+    collection: newSong.collection,
+    fileType: "html",
+    key: newSong.key,
+    youtubeUrl: newSong.youtubeUrl || "",
+    updatedAt: newSong.updatedAt
+  });
+  const normalizedCatalog = normalizeCatalogData({ ...catalog, generatedAt: new Date().toISOString(), songs });
+  for (const filePath of getCatalogWritablePaths()) {
+    writeJsonIfChanged(filePath, normalizedCatalog);
+  }
+}
 function readCustomChords() { const source = readFirstExistingJson([CUSTOM_CHORDS_PATH, PREFERRED_CUSTOM_CHORDS_PATH], {}); return source && typeof source === "object" && !Array.isArray(source) ? source : {}; }
 function writeCustomChords(chords) { fs.mkdirSync(path.dirname(CUSTOM_CHORDS_PATH), { recursive: true }); fs.writeFileSync(CUSTOM_CHORDS_PATH, JSON.stringify(chords, null, 2), "utf8"); }
 function normalizeChordShapePayload(input) { const shape = input && typeof input === "object" ? input : {}; const frets = Array.isArray(shape.frets) ? shape.frets.slice(0, 6).map((value) => { if (value === "x" || value === "X") return "x"; const number = Number(value); return Number.isInteger(number) && number >= 0 && number <= 24 ? number : "x"; }) : ["x", "x", "x", "x", "x", "x"]; while (frets.length < 6) frets.push("x"); const baseFret = Math.max(1, Math.min(15, Number(shape.baseFret) || 1)); const barres = Array.isArray(shape.barres) ? shape.barres.map((barre) => ({ fret: Math.max(1, Math.min(24, Number(barre.fret) || baseFret)), fromString: Math.max(0, Math.min(5, Number(barre.fromString) || 0)), toString: Math.max(0, Math.min(5, Number(barre.toString) || 5)) })) : []; return { frets, baseFret, barres, label: String(shape.label || "Forma personalizada").slice(0, 80), notes: Array.isArray(shape.notes) ? shape.notes.map((note) => String(note).trim()).filter(Boolean).slice(0, 12) : [] }; }
@@ -1083,6 +1131,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === "/api/dev/chords" && req.method === "GET") { if (!requireDev(req, res)) return; return sendJson(res, 200, { ok: true, chords: readCustomChords() }); }
   if (url.pathname === "/api/dev/save-chord" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req); const name = repairPossibleMojibake(body.name || "").trim().replace(/\s+/g, "").slice(0, 40); if (!/^[A-G](?:#|b)?[0-9A-Za-zº°+\-#b()]*?(?:\/[A-G](?:#|b)?)?$/.test(name)) return sendJson(res, 400, { ok: false, error: "invalid-chord-name" }); const chords = readCustomChords(); chords[name] = normalizeChordShapePayload(body.shape); writeCustomChords(chords); return sendJson(res, 200, { ok: true, name, shape: chords[name] }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
+  if (url.pathname === "/api/dev/create-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req, 3 * 1024 * 1024); const created = createCatalogSongRecord(body); const songPath = getWritableSongPath(created.id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(created, null, 2), "utf8"); addCatalogSong(created); return sendJson(res, 200, { ok: true, song: created }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
   if (url.pathname === "/api/dev/save-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req, 3 * 1024 * 1024); const id = String(body.id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!id) return sendJson(res, 400, { ok: false, error: "invalid-song-id" }); const current = readSongRecord(id); if (!current) return sendJson(res, 404, { ok: false, error: "song-not-found" }); saveSongVersion(id, current); const updated = normalizeSongRecordData({ ...current, title: repairPossibleMojibake(body.title || current.title), artist: repairPossibleMojibake(body.artist || current.artist), collection: repairPossibleMojibake(body.collection || current.collection), key: body.key == null ? current.key : repairPossibleMojibake(body.key), html: repairPossibleMojibake(body.html || ""), youtubeUrl: sanitizeYoutubeUrl(body.youtubeUrl || body.youtube_url || current.youtubeUrl || ""), updatedAt: new Date().toISOString() }); const songPath = getWritableSongPath(id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(updated, null, 2), "utf8"); updateCatalogSongMetadata(updated); return sendJson(res, 200, { ok: true, song: updated }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
   if (url.pathname === "/api/dev/restore-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req); const id = String(body.id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!id) return sendJson(res, 400, { ok: false, error: "invalid-song-id" }); const previous = getLatestSongVersion(id); if (!previous) return sendJson(res, 404, { ok: false, error: "version-not-found" }); const current = readSongRecord(id); if (current) saveSongVersion(id, current); const restored = normalizeSongRecordData({ ...previous, updatedAt: new Date().toISOString() }); const songPath = getWritableSongPath(id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(restored, null, 2), "utf8"); updateCatalogSongMetadata(restored); return sendJson(res, 200, { ok: true, song: restored }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
 

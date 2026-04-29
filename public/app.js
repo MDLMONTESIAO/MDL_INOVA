@@ -186,6 +186,7 @@ const state = {
   devTapCount: 0,
   devTapTimer: null,
   devCurrentSongId: null,
+  devCreatingSong: false,
   devPreviewTranspose: 0,
   devPreviewSingerMode: false,
   devEditorMode: localStorage.getItem("mdl.devEditorMode") || "text",
@@ -1284,6 +1285,7 @@ async function handleClick(event) {
     if (action === "dev-check-system") return showView("acervo");
     if (action === "dev-exit") return exitDevMode();
     if (action === "dev-tab") return showDevTab(button.dataset.tab);
+    if (action === "dev-new-song") return newDevSong(true);
     if (action === "dev-open-song") return openDevSong(id);
     if (action === "dev-editor-mode") return setDevEditorMode(button.dataset.mode);
     if (action === "dev-preview-song") return renderDevPreview();
@@ -1504,6 +1506,7 @@ function openAddSongShortcut() {
   if (state.devMode) {
     showView("dev");
     showDevTab("cifras");
+    newDevSong(true);
     return;
   }
   showView("acervo");
@@ -2622,7 +2625,34 @@ function renderDevSongList() {
     : `<div class="dev-empty">Nenhuma música encontrada para essa busca.</div>`;
 }
 async function openDevEditorFromReader() { if (!state.currentSongId) return; await openDevSong(state.currentSongId, true); }
-async function openDevSong(id, goToDev = false) { if (!state.devMode) return; const song = findSong(id); if (!song) return; state.devCurrentSongId = id; state.devPreviewTranspose = 0; syncDevEditorModeUi(); if (dom.devSongStatus) dom.devSongStatus.textContent = "Carregando m\u00FAsica..."; try { const response = await fetch(`/api/songs/${encodeURIComponent(id)}?v=${Date.now()}`); const data = response.ok ? await response.json() : {}; const rawSheet = normalizeSheetContent(data.html || sampleSheets[id] || ""); if (dom.devSongTitle) dom.devSongTitle.value = data.title || song.title || ""; if (dom.devSongArtist) dom.devSongArtist.value = data.artist || song.artist || ""; if (dom.devSongKey) dom.devSongKey.value = data.key || song.key || ""; if (dom.devSongCollection) dom.devSongCollection.value = data.collection || song.collection || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? rawSheet : htmlToEditableSheetText(rawSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = ""; } catch { const fallbackSheet = sampleSheets[id] || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? fallbackSheet : htmlToEditableSheetText(fallbackSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = "Usando vers\u00E3o local/offline."; } renderDevSongList(); renderDevPreview(); showDevTab("cifras"); if (goToDev) showView("dev"); }
+function newDevSong(forceHtmlMode = false) {
+  if (!state.devMode) return;
+  state.devCurrentSongId = null;
+  state.devCreatingSong = true;
+  state.devPreviewTranspose = 0;
+  state.devPreviewSingerMode = false;
+  if (forceHtmlMode) {
+    state.devEditorMode = "html";
+    localStorage.setItem("mdl.devEditorMode", "html");
+  }
+  syncDevEditorModeUi();
+  if (dom.devSongSearch) dom.devSongSearch.value = "";
+  if (dom.devSongTitle) dom.devSongTitle.value = "";
+  if (dom.devSongArtist) dom.devSongArtist.value = "";
+  if (dom.devSongKey) dom.devSongKey.value = "";
+  if (dom.devSongCollection) dom.devSongCollection.value = "";
+  if (dom.devSongHtml) {
+    dom.devSongHtml.value = state.devEditorMode === "html"
+      ? `<span class="part">Intro</span>\n<i>C   G   Am   F</i>\n\nPrimeira linha da letra`
+      : `[Intro] C G Am F\n\nPrimeira linha da letra`;
+  }
+  if (dom.devSongStatus) dom.devSongStatus.textContent = "Nova cifra pronta. Preencha os campos e salve para criar a m\u00FAsica.";
+  renderDevSongList();
+  renderDevPreview();
+  showDevTab("cifras");
+  showView("dev");
+}
+async function openDevSong(id, goToDev = false) { if (!state.devMode) return; const song = findSong(id); if (!song) return; state.devCurrentSongId = id; state.devCreatingSong = false; state.devPreviewTranspose = 0; syncDevEditorModeUi(); if (dom.devSongStatus) dom.devSongStatus.textContent = "Carregando m\u00FAsica..."; try { const response = await fetch(`/api/songs/${encodeURIComponent(id)}?v=${Date.now()}`); const data = response.ok ? await response.json() : {}; const rawSheet = normalizeSheetContent(data.html || sampleSheets[id] || ""); if (dom.devSongTitle) dom.devSongTitle.value = data.title || song.title || ""; if (dom.devSongArtist) dom.devSongArtist.value = data.artist || song.artist || ""; if (dom.devSongKey) dom.devSongKey.value = data.key || song.key || ""; if (dom.devSongCollection) dom.devSongCollection.value = data.collection || song.collection || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? rawSheet : htmlToEditableSheetText(rawSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = ""; } catch { const fallbackSheet = sampleSheets[id] || ""; if (dom.devSongHtml) dom.devSongHtml.value = state.devEditorMode === "html" ? fallbackSheet : htmlToEditableSheetText(fallbackSheet); if (dom.devSongStatus) dom.devSongStatus.textContent = "Usando vers\u00E3o local/offline."; } renderDevSongList(); renderDevPreview(); showDevTab("cifras"); if (goToDev) showView("dev"); }
 function getDevSongHtmlForPreview() {
   const source = dom.devSongHtml?.value || "";
   return state.devEditorMode === "html" ? source : sheetTextToHtml(source);
@@ -2630,7 +2660,47 @@ function getDevSongHtmlForPreview() {
 function renderDevPreview() { if (!dom.devChordPreview) return; const rawHtml = getDevSongHtmlForPreview(); const title = dom.devSongTitle?.value || "Selecione uma m\u00FAsica"; if (dom.devPreviewTitle) dom.devPreviewTitle.textContent = title; const html = state.devPreviewSingerMode ? stripChordsToLyrics(rawHtml) : decorateChordHtml(transposeHtml(rawHtml, state.devPreviewTranspose)); dom.devChordPreview.innerHTML = `<pre>${html || "Abra uma m\u00FAsica para testar a leitura."}</pre>`; }
 function toggleDevPreviewSinger() { state.devPreviewSingerMode = !state.devPreviewSingerMode; renderDevPreview(); }
 function transposeDevPreview(amount, reset = false) { state.devPreviewTranspose = reset ? 0 : state.devPreviewTranspose + amount; renderDevPreview(); }
-async function saveDevSong() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (dom.devSongStatus) dom.devSongStatus.textContent = "Salvando..."; try { const response = await fetch("/api/dev/save-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId, title: dom.devSongTitle?.value || "", artist: dom.devSongArtist?.value || "", key: dom.devSongKey?.value || "", collection: dom.devSongCollection?.value || "", html: getDevSongHtmlForPreview() }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-failed"); if (dom.devSongStatus) dom.devSongStatus.textContent = state.devEditorMode === "html" ? "Salvo com versionamento." : "Texto convertido e salvo com versionamento."; toast("Cifra salva"); await refreshLibrary(); if (state.currentSongId === state.devCurrentSongId) await openSong(state.devCurrentSongId); } catch { if (dom.devSongStatus) dom.devSongStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar cifra"); } }
+async function saveDevSong() {
+  if (!isDevMode()) return toast("Ative o modo desenvolvedor");
+  const title = String(dom.devSongTitle?.value || "").trim();
+  const artist = String(dom.devSongArtist?.value || "").trim();
+  const key = String(dom.devSongKey?.value || "").trim();
+  const collection = String(dom.devSongCollection?.value || "").trim();
+  if (!title) return toast("Digite o titulo da musica");
+  if (!artist) return toast("Digite o artista da musica");
+  const creating = !state.devCurrentSongId || state.devCreatingSong;
+  if (dom.devSongStatus) dom.devSongStatus.textContent = creating ? "Criando cifra..." : "Salvando...";
+  try {
+    const response = await fetch(creating ? "/api/dev/create-song" : "/api/dev/save-song", {
+      method: "POST",
+      headers: devHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        id: state.devCurrentSongId,
+        title,
+        artist,
+        key,
+        collection,
+        html: getDevSongHtmlForPreview()
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok || !data.song?.id) throw new Error(data.error || "save-failed");
+    state.devCurrentSongId = data.song.id;
+    state.devCreatingSong = false;
+    if (dom.devSongCollection && !dom.devSongCollection.value && data.song.collection) dom.devSongCollection.value = data.song.collection;
+    if (dom.devSongStatus) dom.devSongStatus.textContent = creating
+      ? "Nova cifra criada e salva em HTML."
+      : (state.devEditorMode === "html" ? "Salvo com versionamento." : "Texto convertido e salvo com versionamento.");
+    await refreshLibrary();
+    if (creating && dom.devSongSearch) dom.devSongSearch.value = `${artist} ${title}`;
+    renderDevSongList();
+    toast(creating ? "Nova cifra criada" : "Cifra salva");
+    if (state.currentSongId === state.devCurrentSongId) await openSong(state.devCurrentSongId);
+  } catch {
+    if (dom.devSongStatus) dom.devSongStatus.textContent = creating ? "N\u00E3o foi poss\u00EDvel criar a cifra." : "N\u00E3o foi poss\u00EDvel salvar.";
+    toast(creating ? "Falha ao criar cifra" : "Falha ao salvar cifra");
+  }
+}
 async function restoreDevSongVersion() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); if (!state.devCurrentSongId) return toast("Selecione uma m\u00FAsica"); if (!confirm("Restaurar a vers\u00E3o anterior desta m\u00FAsica?")) return; try { const response = await fetch("/api/dev/restore-song", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: state.devCurrentSongId }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "restore-failed"); await openDevSong(state.devCurrentSongId); await refreshLibrary(); toast("Vers\u00E3o restaurada"); } catch { toast("N\u00E3o h\u00E1 vers\u00E3o anterior para restaurar"); } }
 function getDevChordKeys() { return Object.keys(CHORD_SHAPE_LIBRARY).sort((a, b) => a.localeCompare(b, "pt-BR")); }
 function renderDevChordList() { if (!dom.devChordList || !state.devMode) return; const query = normalize(dom.devChordSearch?.value || ""); const chords = getDevChordKeys().filter((name) => !query || normalize(name).includes(query)).slice(0, 180); dom.devChordList.innerHTML = chords.length ? chords.map((name) => `<button type="button" data-action="dev-open-chord" data-chord="${escapeAttr(name)}" class="${name === state.devChordName ? "active" : ""}"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(CHORD_SHAPE_LIBRARY[name]?.label || "Forma sugerida")}</span></button>`).join("") : `<div class="dev-empty">Nenhum acorde encontrado.</div>`; }
