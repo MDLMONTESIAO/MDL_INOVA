@@ -1,1 +1,298 @@
-/* Arquivo neutralizado pelo rollback dos modos de visualização. */
+/* MDL - modos de visualização do acervo corrigidos
+   Funciona em tablet/PC.
+   No celular, o app fica no modo original.
+*/
+
+#mdlSongViewModeBar {
+  display: none;
+}
+
+@media (min-width: 700px) {
+  #mdlSongViewModeBar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 14px;
+    flex-wrap: wrap;
+  }
+
+  .mdl-view-mode-button {
+    min-height: 38px;
+    border-radius: 999px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, .05);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 950;
+    box-shadow: none;
+    transition: transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+
+  :root[data-theme="dark"] .mdl-view-mode-button {
+    color: #f8efe2;
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .16);
+  }
+
+  .mdl-view-mode-button svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+  }
+
+  .mdl-view-mode-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .mdl-view-mode-button.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold-2));
+    color: #17120c;
+    border-color: transparent;
+  }
+
+  /* O modo só afeta o ACERVO. Não mexe em Artistas, Top artistas, cards laterais etc. */
+  #view-acervo #songList {
+    align-items: stretch !important;
+  }
+
+  /* Remove resíduos de capas gigantes criadas pelos CSS antigos */
+  #view-acervo #songList .song-card {
+    max-height: none !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #view-acervo #songList .song-card::before,
+  #view-acervo #songList .song-card::after {
+    pointer-events: none !important;
+  }
+
+  /* LISTA */
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-card {
+    min-height: 86px !important;
+    height: auto !important;
+    border-radius: 16px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    background: #fffaf2 !important;
+    background-image: none !important;
+    border: 1px solid rgba(21, 18, 15, .14) !important;
+    color: #15120f !important;
+    box-shadow: 0 10px 24px rgba(30, 20, 8, .08) !important;
+  }
+
+  :root[data-theme="dark"] body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-card {
+    background: #101a2b !important;
+    border-color: rgba(255, 255, 255, .12) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-card::before,
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-card::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-main {
+    color: inherit !important;
+    min-width: 0 !important;
+    display: grid !important;
+    gap: 4px !important;
+    text-align: left !important;
+    justify-items: start !important;
+    z-index: 1 !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-title {
+    color: #15120f !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+    font-weight: 950 !important;
+  }
+
+  :root[data-theme="dark"] body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-title {
+    color: #ffffff !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-meta {
+    color: #5f5447 !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+  }
+
+  :root[data-theme="dark"] body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-meta {
+    color: #c7d2e3 !important;
+  }
+
+  body[data-mdl-song-view-mode="list"] #view-acervo #songList .song-actions {
+    position: static !important;
+    z-index: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  /* ÍCONES PEQUENOS */
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-card {
+    position: relative !important;
+    min-height: 150px !important;
+    height: 150px !important;
+    border-radius: 18px !important;
+    padding: 12px !important;
+    display: grid !important;
+    align-content: end !important;
+    grid-template-columns: 1fr !important;
+    background-color: #141823 !important;
+    background-size: cover !important;
+    background-position: center !important;
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-card::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.78)) !important;
+    z-index: 0 !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-main,
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-actions {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-title {
+    color: #fff !important;
+    font-size: 15px !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,.65) !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-meta {
+    color: rgba(255,255,255,.82) !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,.65) !important;
+  }
+
+  body[data-mdl-song-view-mode="small"] #view-acervo #songList .song-actions {
+    margin-top: 8px !important;
+  }
+
+  /* ÍCONES GRANDES */
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-card {
+    position: relative !important;
+    min-height: 260px !important;
+    height: 260px !important;
+    max-height: 260px !important;
+    border-radius: 22px !important;
+    padding: 18px !important;
+    display: grid !important;
+    align-content: end !important;
+    grid-template-columns: 1fr !important;
+    background-color: #141823 !important;
+    background-size: cover !important;
+    background-position: center !important;
+    border: 1px solid rgba(255, 255, 255, .16) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-card::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.82)) !important;
+    z-index: 0 !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-main,
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-actions {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-title {
+    color: #fff !important;
+    font-size: 20px !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.7) !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-meta {
+    color: rgba(255,255,255,.86) !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.7) !important;
+  }
+
+  body[data-mdl-song-view-mode="large"] #view-acervo #songList .song-actions {
+    margin-top: 10px !important;
+  }
+
+  /* Remove a bolinha do tom nos cards */
+  #view-acervo #songList .song-card > b,
+  #view-acervo #songList .song-card > strong:first-child,
+  #view-acervo #songList .song-card > span:first-child,
+  #view-acervo #songList .song-card .song-key,
+  #view-acervo #songList .song-card .key-badge,
+  #view-acervo #songList .song-card .tone-badge,
+  #view-acervo #songList .song-card .tom-badge,
+  #view-acervo #songList .song-card [data-key],
+  #view-acervo #songList .song-card [data-tone],
+  #view-acervo #songList .song-card [data-tom] {
+    display: none !important;
+  }
+}
+
+@media (max-width: 699px) {
+  #mdlSongViewModeBar {
+    display: none !important;
+  }
+}
