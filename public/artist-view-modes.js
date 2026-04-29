@@ -19,9 +19,17 @@
 
   const STORAGE_KEY = "mdl.songViewMode";
   const DEFAULT_MODE = "large";
+  let songListObserver = null;
+  let appShellObserver = null;
+  let syncTimer = null;
 
   function isDesktopLike() {
     return window.matchMedia("(min-width: 700px)").matches;
+  }
+
+  function appIsAuthenticated() {
+    const appShell = document.getElementById("appShell");
+    return Boolean(appShell && !appShell.hidden);
   }
 
   function getMode() {
@@ -32,7 +40,15 @@
   function setMode(modeId) {
     const next = MODES.some((mode) => mode.id === modeId) ? modeId : DEFAULT_MODE;
     localStorage.setItem(STORAGE_KEY, next);
-    document.body.dataset.mdlSongViewMode = isDesktopLike() ? next : "";
+
+    if (isDesktopLike() && appIsAuthenticated()) {
+      document.body.classList.add("mdl-authenticated");
+      document.body.dataset.mdlSongViewMode = next;
+    } else {
+      document.body.classList.remove("mdl-authenticated");
+      delete document.body.dataset.mdlSongViewMode;
+    }
+
     updateButtons(next);
     applyCoverBackgrounds();
   }
@@ -53,39 +69,56 @@
     });
   }
 
+  function createToolbar() {
+    const bar = document.createElement("div");
+    bar.id = "mdlSongViewModeBar";
+    bar.setAttribute("aria-label", "Modo de visualização das músicas");
+
+    MODES.forEach((mode) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "mdl-view-mode-button";
+      button.dataset.mode = mode.id;
+      button.innerHTML = mode.icon + "<span>" + mode.label + "</span>";
+      button.addEventListener("click", () => setMode(mode.id));
+      bar.appendChild(button);
+    });
+
+    return bar;
+  }
+
   function ensureToolbar() {
+    if (!appIsAuthenticated() || !isDesktopLike()) {
+      const bar = document.getElementById("mdlSongViewModeBar");
+      if (bar) bar.remove();
+      document.body.classList.remove("mdl-authenticated");
+      delete document.body.dataset.mdlSongViewMode;
+      return;
+    }
+
     const acervoView = document.getElementById("view-acervo");
     const songList = document.getElementById("songList");
-
     if (!acervoView || !songList) return;
 
     removeOldToolbars();
 
     let bar = document.getElementById("mdlSongViewModeBar");
-    if (!bar) {
-      bar = document.createElement("div");
-      bar.id = "mdlSongViewModeBar";
-      bar.setAttribute("aria-label", "Modo de visualização das músicas");
-
-      MODES.forEach((mode) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "mdl-view-mode-button";
-        button.dataset.mode = mode.id;
-        button.innerHTML = mode.icon + "<span>" + mode.label + "</span>";
-        button.addEventListener("click", () => setMode(mode.id));
-        bar.appendChild(button);
-      });
-    }
+    if (!bar) bar = createToolbar();
 
     const libraryToolbar = acervoView.querySelector(".library-toolbar");
+    const desiredParent = libraryToolbar?.parentElement || songList.parentElement;
+    const desiredPrevious = libraryToolbar || null;
+
     if (libraryToolbar) {
-      libraryToolbar.insertAdjacentElement("afterend", bar);
-    } else {
+      if (bar.previousElementSibling !== libraryToolbar) {
+        libraryToolbar.insertAdjacentElement("afterend", bar);
+      }
+    } else if (songList.previousElementSibling !== bar) {
       songList.insertAdjacentElement("beforebegin", bar);
     }
 
     setMode(getMode());
+    attachSongListObserver();
   }
 
   function extractImageUrl(value) {
@@ -95,44 +128,83 @@
   }
 
   function applyCoverBackgrounds() {
+    if (!appIsAuthenticated()) return;
+
     const songList = document.getElementById("songList");
     if (!songList) return;
+
+    const mode = document.body.dataset.mdlSongViewMode;
+    const useBackground = mode === "small" || mode === "large";
 
     songList.querySelectorAll(".song-card").forEach((card) => {
       const img = card.querySelector("img");
       const imgUrl = img?.getAttribute("src") || img?.src || "";
       const inlineBg = extractImageUrl(card.style.backgroundImage);
-      const existing = imgUrl || inlineBg || card.dataset.mdlCover || "";
+      const existing = imgUrl || card.dataset.mdlCover || inlineBg || "";
 
-      if (existing) {
-        card.dataset.mdlCover = existing;
-        if (document.body.dataset.mdlSongViewMode === "small" || document.body.dataset.mdlSongViewMode === "large") {
-          card.style.backgroundImage = `url("${existing}")`;
-        } else {
-          card.style.backgroundImage = "";
-        }
-      } else if (document.body.dataset.mdlSongViewMode === "list") {
+      if (existing) card.dataset.mdlCover = existing;
+
+      if (useBackground && existing) {
+        card.style.backgroundImage = `url("${existing}")`;
+      } else if (card.dataset.mdlCover) {
         card.style.backgroundImage = "";
       }
     });
   }
 
-  function boot() {
-    ensureToolbar();
-    applyCoverBackgrounds();
+  function attachSongListObserver() {
+    if (songListObserver) return;
 
-    const observer = new MutationObserver(() => {
-      ensureToolbar();
-      applyCoverBackgrounds();
+    const songList = document.getElementById("songList");
+    if (!songList) return;
+
+    songListObserver = new MutationObserver(() => {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        updateButtons(getMode());
+        applyCoverBackgrounds();
+      }, 80);
     });
 
-    observer.observe(document.body, {
+    songListObserver.observe(songList, {
       childList: true,
       subtree: true
     });
+  }
 
-    window.addEventListener("resize", () => setMode(getMode()));
-    window.addEventListener("orientationchange", () => setMode(getMode()));
+  function sync() {
+    ensureToolbar();
+    setMode(getMode());
+  }
+
+  function boot() {
+    const appShell = document.getElementById("appShell");
+
+    if (appShell) {
+      appShellObserver = new MutationObserver(() => {
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(sync, 100);
+      });
+
+      appShellObserver.observe(appShell, {
+        attributes: true,
+        attributeFilter: ["hidden"]
+      });
+    }
+
+    // Não mexe na tela de login; só tenta sincronizar se já estiver logado.
+    sync();
+
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+
+    // Pequeno intervalo para pegar o momento em que o app renderiza depois do login.
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      sync();
+      if (attempts > 20 || appIsAuthenticated()) clearInterval(interval);
+    }, 500);
   }
 
   if (document.readyState === "loading") {
