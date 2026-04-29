@@ -1,9 +1,9 @@
 {
   "name": "Acervo Musical MDL Inova",
-  "generatedAt": "2026-04-29T02:01:00.525Z",
-  "artistThumbsUpdatedAt": null,
-  "totalSongs": 6231,
-  "totalArtists": 62,
+  "generatedAt": "2026-04-29T21:46:36.795Z",
+  "artistThumbsUpdatedAt": "2026-04-29T21:43:53.115Z",
+  "totalSongs": 6234,
+  "totalArtists": 63,
   "artists": [
     "3 Palavrinhas",
     "Adoracao Central",
@@ -38,6 +38,7 @@
     "Julliany Souza",
     "Kailane Frauches",
     "Kemilly Santos",
+    "Kherem Carvalho",
     "Laura Souguellis",
     "Lauriete",
     "Leonardo Goncalves",
@@ -131,7 +132,8 @@
     "Valesca Mayssa": "/assets/artists/valesca-mayssa.jpg",
     "Vencedores Por Cristo": "/assets/artists/vencedores-por-cristo.jpg",
     "Vigilia Attos2": "/assets/artists/vigilia-attos2.jpg",
-    "Vineyard Music Brasil": "/assets/artists/vineyard-music-brasil.jpg"
+    "Vineyard Music Brasil": "/assets/artists/vineyard-music-brasil.jpg",
+    "Kherem Carvalho": "/artist-thumbs/kherem-carvalho.png?v=1777499033113"
   },
   "songs": [
     {
@@ -47052,6 +47054,43 @@
       "artistThumb": "/assets/artists/kemilly-santos.jpg"
     },
     {
+      "id": "kherem-carvalho-confio-em-ti-312c3d",
+      "title": "Confio Em Ti",
+      "artist": "Kherem Carvalho",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-29T21:46:01.752Z",
+      "apiUrl": "/api/songs/kherem-carvalho-confio-em-ti-312c3d",
+      "offlineKey": "mdl-song-kherem-carvalho-confio-em-ti-312c3d"
+    },
+    {
+      "id": "kherem-carvalho-confio-em-ti",
+      "title": "Do Zero",
+      "artist": "Kherem Carvalho",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-29T21:44:59.435Z",
+      "apiUrl": "/api/songs/kherem-carvalho-confio-em-ti",
+      "offlineKey": "mdl-song-kherem-carvalho-confio-em-ti",
+      "artistThumb": "/artist-thumbs/kherem-carvalho.png?v=1777499033113"
+    },
+    {
+      "id": "kherem-carvalho-pelos-seculos-dos-seculos",
+      "title": "Pelos Séculos Dos Séculos",
+      "artist": "Kherem Carvalho",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-29T21:46:36.768Z",
+      "apiUrl": "/api/songs/kherem-carvalho-pelos-seculos-dos-seculos",
+      "offlineKey": "mdl-song-kherem-carvalho-pelos-seculos-dos-seculos"
+    },
+    {
       "id": "laura-souguellis-a-graca-que-ele-da-868221bae7",
       "title": "A Graça Que Ele Dá",
       "artist": "Laura Souguellis",
@@ -76393,6 +76432,58 @@
       "artistThumb": "/assets/artists/valesca-mayssa.jpg"
     },
     {
+      "id": "vencedores-por-cristo-001-aleluia-3d77b9a898",
+      "title": "001 - Aleluia",
+      "artist": "Vencedores Por Cristo",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "D",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-27T00:49:09.973Z",
+      "apiUrl": "/api/songs/vencedores-por-cristo-001-aleluia-3d77b9a898",
+      "offlineKey": "mdl-song-vencedores-por-cristo-001-aleluia-3d77b9a898",
+      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
+    },
+    {
+      "id": "vencedores-por-cristo-008-deus-e-real-35ba1f2904",
+      "title": "008 - Deus É Real",
+      "artist": "Vencedores Por Cristo",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "D",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-27T00:49:13.570Z",
+      "apiUrl": "/api/songs/vencedores-por-cristo-008-deus-e-real-35ba1f2904",
+      "offlineKey": "mdl-song-vencedores-por-cristo-008-deus-e-real-35ba1f2904",
+      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
+    },
+    {
+      "id": "vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
+      "title": "014 - Lancemos Sobre Deus",
+      "artist": "Vencedores Por Cristo",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "E",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-27T00:49:17.213Z",
+      "apiUrl": "/api/songs/vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
+      "offlineKey": "mdl-song-vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
+      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
+    },
+    {
+      "id": "vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
+      "title": "033 - Quero Transmitir",
+      "artist": "Vencedores Por Cristo",
+      "collection": "cifras_multi",
+      "fileType": "html",
+      "key": "C",
+      "youtubeUrl": "",
+      "updatedAt": "2026-04-27T00:49:20.807Z",
+      "apiUrl": "/api/songs/vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
+      "offlineKey": "mdl-song-vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
+      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
+    },
+    {
       "id": "vencedores-por-cristo-1-corintios-2-9-be9a3b142a",
       "title": "1 coríntios 2.9",
       "artist": "Vencedores Por Cristo",
@@ -76559,19 +76650,6 @@
       "updatedAt": "2026-04-27T00:50:07.779Z",
       "apiUrl": "/api/songs/vencedores-por-cristo-ajuntamento-fe5c621167",
       "offlineKey": "mdl-song-vencedores-por-cristo-ajuntamento-fe5c621167",
-      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
-    },
-    {
-      "id": "vencedores-por-cristo-001-aleluia-3d77b9a898",
-      "title": "Aleluia",
-      "artist": "Vencedores Por Cristo",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "D",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T02:00:43.693Z",
-      "apiUrl": "/api/songs/vencedores-por-cristo-001-aleluia-3d77b9a898",
-      "offlineKey": "mdl-song-vencedores-por-cristo-001-aleluia-3d77b9a898",
       "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
     },
     {
@@ -77290,19 +77368,6 @@
       "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
     },
     {
-      "id": "vencedores-por-cristo-008-deus-e-real-35ba1f2904",
-      "title": "Deus É Real",
-      "artist": "Vencedores Por Cristo",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "D",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T02:00:49.138Z",
-      "apiUrl": "/api/songs/vencedores-por-cristo-008-deus-e-real-35ba1f2904",
-      "offlineKey": "mdl-song-vencedores-por-cristo-008-deus-e-real-35ba1f2904",
-      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
-    },
-    {
       "id": "vencedores-por-cristo-deus-esta-presente-2a49055ead",
       "title": "Deus está presente",
       "artist": "Vencedores Por Cristo",
@@ -77885,19 +77950,6 @@
       "updatedAt": "2026-04-27T00:56:10.106Z",
       "apiUrl": "/api/songs/vencedores-por-cristo-la-esta-o-meu-tesouro-3066dc0a92",
       "offlineKey": "mdl-song-vencedores-por-cristo-la-esta-o-meu-tesouro-3066dc0a92",
-      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
-    },
-    {
-      "id": "vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
-      "title": "Lancemos Sobre Deus",
-      "artist": "Vencedores Por Cristo",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "E",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T02:00:54.174Z",
-      "apiUrl": "/api/songs/vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
-      "offlineKey": "mdl-song-vencedores-por-cristo-014-lancemos-sobre-deus-93d99067d9",
       "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
     },
     {
@@ -78821,19 +78873,6 @@
       "updatedAt": "2026-04-27T01:00:28.047Z",
       "apiUrl": "/api/songs/vencedores-por-cristo-quero-louvar-te-4a5d22bc0a",
       "offlineKey": "mdl-song-vencedores-por-cristo-quero-louvar-te-4a5d22bc0a",
-      "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
-    },
-    {
-      "id": "vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
-      "title": "Quero Transmitir",
-      "artist": "Vencedores Por Cristo",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "C",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T02:01:00.504Z",
-      "apiUrl": "/api/songs/vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
-      "offlineKey": "mdl-song-vencedores-por-cristo-033-quero-transmitir-5f4c72038c",
       "artistThumb": "/assets/artists/vencedores-por-cristo.jpg"
     },
     {
