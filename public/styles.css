@@ -1747,6 +1747,18 @@ body.screen-admin .main-area {
   height: 20px;
 }
 
+.admin-actions-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-refresh.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
 .admin-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

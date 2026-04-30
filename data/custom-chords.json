@@ -12,5 +12,59 @@
     "barres": [],
     "label": "Forma personalizada",
     "notes": []
+  },
+  "A9": {
+    "frets": [
+      "x",
+      0,
+      2,
+      2,
+      "x",
+      "x"
+    ],
+    "baseFret": 1,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": [
+      "A",
+      "C#",
+      "E",
+      "G",
+      "B"
+    ]
+  },
+  "Dm7-9": {
+    "frets": [
+      "x",
+      7,
+      5,
+      7,
+      7,
+      "x"
+    ],
+    "baseFret": 3,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": []
+  },
+  "A9/C#": {
+    "frets": [
+      "x",
+      7,
+      5,
+      5,
+      "x",
+      "x"
+    ],
+    "baseFret": 4,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": [
+      "A",
+      "C#",
+      "E",
+      "G",
+      "B"
+    ]
   }
 }

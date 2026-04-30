@@ -1,3 +1,6 @@
+const ZAPI_URL = "https://api.z-api.io/instances/3F271A65BBC9D2EC64C6AA151284BCC4/token/676942425990E1D69B45B158/send-text";
+const ZAPI_CLIENT_TOKEN = "";
+
 const NOTE_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const NOTE_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 const NOTE_INDEX = {
@@ -164,6 +167,14 @@ const state = {
   tunerBuffer: null,
   tunerFrame: null,
   tunerLastAt: 0,
+  voiceToneRunning: false,
+  voiceToneStream: null,
+  voiceToneContext: null,
+  voiceToneSource: null,
+  voiceToneAnalyser: null,
+  voiceToneBuffer: null,
+  voiceToneFrame: null,
+  voiceToneDetected: null,
   offlineSongs: new Set(),
   offlineArtistDownloads: new Map(),
   songMedia: new Map(),
@@ -180,6 +191,7 @@ const state = {
   playUpdatedAt: localStorage.getItem("mdl.playEnsaioUpdatedAt") || "",
   playDirty: localStorage.getItem("mdl.playEnsaioDirty") === "true",
   play: normalizePlayEntries(JSON.parse(localStorage.getItem("mdl.playEnsaio") || "[]"), null),
+  contacts: JSON.parse(localStorage.getItem("mdl.contacts") || "[]"),
   liveSession: readLiveSession(),
   devMode: false,
   devToken: sessionStorage.getItem("mdl.devToken") || "",
@@ -366,7 +378,9 @@ const dom = {
   devChordPreviewDiagram: document.getElementById("devChordPreviewDiagram"),
   adminSongCount: document.getElementById("adminSongCount"),
   adminArtistCount: document.getElementById("adminArtistCount"),
-  adminUpdatedAt: document.getElementById("adminUpdatedAt")
+  adminUpdatedAt: document.getElementById("adminUpdatedAt"),
+  adminBackupStatus: document.getElementById("adminBackupStatus"),
+  backupRestoreInput: document.getElementById("backupRestoreInput")
 };
 
 init();
@@ -1098,6 +1112,7 @@ function bindEvents() {
   dom.accountAvatarInput?.addEventListener("change", handleAccountAvatarSelected);
   dom.localCoverInput?.addEventListener("change", handleLocalCoverSelected);
   dom.artistThumbInput?.addEventListener("change", handleArtistThumbSelected);
+  dom.backupRestoreInput?.addEventListener("change", handleAdminBackupRestoreSelected);
   dom.localAudioInput?.addEventListener("change", handleLocalAudioSelected);
 }
 
@@ -1271,6 +1286,7 @@ async function handleClick(event) {
     if (action === "shortcut-chord-guide") return openChordGuideShortcut();
     if (action === "shortcut-local-audio") return showSongsWithLocalAudio();
     if (action === "start-tuner") return state.tunerRunning ? stopTuner() : startTuner();
+    if (action === "detect-voice-tone") return toggleVoiceToneDetector();
     if (action === "transpose-down") return transposeCurrentSong(-1);
     if (action === "transpose-up") return transposeCurrentSong(1);
     if (action === "reset-tone") return resetTone();
@@ -1280,8 +1296,14 @@ async function handleClick(event) {
     if (action === "live-next") return goLiveToNextSong();
     if (action === "live-reset-timer") return resetLiveSessionTimer();
     if (action === "share-play") return sharePlay();
+    if (action === "manage-contacts") return openContactsModal();
+    if (action === "close-contacts") return closeContactsModal();
+    if (action === "add-contact") return addContact();
+    if (action === "remove-contact") return removeContact(Number(button.dataset.index));
     if (action === "toggle-edit-play") return requireLeader() && togglePlayEditing();
     if (action === "admin-refresh") return adminRefresh();
+    if (action === "admin-backup-download") return downloadAdminBackup();
+    if (action === "admin-backup-restore") return chooseAdminBackupRestore();
     if (action === "dev-check-system") return showView("acervo");
     if (action === "dev-exit") return exitDevMode();
     if (action === "dev-tab") return showDevTab(button.dataset.tab);
@@ -1724,6 +1746,7 @@ async function addToPlay(id, selectedKey = null) {
   await pushSharedPlay();
   renderPlay();
   toast("Adicionada ao Play do ensaio");
+  notifyContactsZAPI(id);
   downloadSongForOffline(id);
 }
 
@@ -2185,6 +2208,154 @@ function toggleChordInstrument() {
   toast(state.chordInstrument === "keyboard" ? "Acordes em teclado" : "Acordes em violão");
 }
 
+function toggleVoiceToneDetector() {
+  if (state.voiceToneRunning) {
+    stopVoiceToneDetector();
+    toast("Detecção de tom encerrada");
+  } else {
+    startVoiceToneDetector();
+  }
+}
+
+async function startVoiceToneDetector() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass || !navigator.mediaDevices?.getUserMedia) {
+    toast("Microfone indisponível neste navegador");
+    return;
+  }
+
+  const btn = document.getElementById("voiceToneButton");
+  if (btn) {
+    btn.textContent = "🎤 Ouvindo...";
+    btn.classList.add("active");
+  }
+
+  toast("Cante algumas notas - detectando seu tom...");
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+
+    const audioContext = new AudioContextClass();
+    if (audioContext.state === "suspended") await audioContext.resume();
+
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 4096;
+    analyser.smoothingTimeConstant = 0.85;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    state.voiceToneRunning = true;
+    state.voiceToneStream = stream;
+    state.voiceToneContext = audioContext;
+    state.voiceToneSource = source;
+    state.voiceToneAnalyser = analyser;
+    state.voiceToneBuffer = new Float32Array(analyser.fftSize);
+    state.voiceToneDetected = null;
+
+    const detectedNotes = [];
+    const startTime = performance.now();
+    const DETECTION_DURATION_MS = 4000;
+
+    function collectTick() {
+      if (!state.voiceToneRunning) return;
+
+      const elapsed = performance.now() - startTime;
+
+      if (elapsed >= DETECTION_DURATION_MS) {
+        stopVoiceToneDetector();
+        applyDetectedVoiceTone(detectedNotes);
+        return;
+      }
+
+      state.voiceToneAnalyser.getFloatTimeDomainData(state.voiceToneBuffer);
+
+      const freq = detectPitch(state.voiceToneBuffer, state.voiceToneContext.sampleRate);
+      if (freq) {
+        const noteObj = frequencyToNote(freq);
+        detectedNotes.push(noteObj.name);
+      }
+
+      state.voiceToneFrame = requestAnimationFrame(collectTick);
+    }
+
+    state.voiceToneFrame = requestAnimationFrame(collectTick);
+  } catch {
+    stopVoiceToneDetector();
+    toast("Não foi possível abrir o microfone");
+  }
+}
+
+function stopVoiceToneDetector() {
+  if (state.voiceToneFrame) {
+    cancelAnimationFrame(state.voiceToneFrame);
+    state.voiceToneFrame = null;
+  }
+  if (state.voiceToneSource) {
+    try { state.voiceToneSource.disconnect(); } catch {}
+  }
+  if (state.voiceToneStream) {
+    state.voiceToneStream.getTracks().forEach((t) => t.stop());
+  }
+  if (state.voiceToneContext) {
+    state.voiceToneContext.close().catch(() => {});
+  }
+
+  state.voiceToneRunning = false;
+  state.voiceToneStream = null;
+  state.voiceToneContext = null;
+  state.voiceToneSource = null;
+  state.voiceToneAnalyser = null;
+  state.voiceToneBuffer = null;
+
+  const btn = document.getElementById("voiceToneButton");
+  if (btn) {
+    btn.textContent = "🎤 Meu Tom";
+    btn.classList.remove("active");
+  }
+}
+
+function applyDetectedVoiceTone(detectedNotes) {
+  if (!detectedNotes.length) {
+    toast("Não detectei nenhum tom - tente cantar mais alto");
+    return;
+  }
+
+  const counts = {};
+  for (const note of detectedNotes) {
+    counts[note] = (counts[note] || 0) + 1;
+  }
+  const dominantNote = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+
+  if (!state.baseKey) {
+    toast("Abra uma cifra primeiro para usar o detector de tom");
+    return;
+  }
+
+  const baseIndex = NOTE_INDEX[state.baseKey] ?? 0;
+  const targetIndex = NOTE_INDEX[dominantNote] ?? 0;
+
+  let semitones = targetIndex - baseIndex;
+  if (semitones > 6) semitones -= 12;
+  if (semitones < -6) semitones += 12;
+
+  state.transposeOffset = semitones;
+  renderCurrentSheet();
+  updateToneButton();
+
+  const toastMsg = semitones === 0
+    ? `Sua voz está no tom original (${dominantNote})`
+    : `Tom transportado para ${dominantNote} (${semitones > 0 ? "+" : ""}${semitones} semitons)`;
+
+  toast(toastMsg);
+}
+
 function transposeCurrentSong(direction) {
   state.transposeOffset += direction;
   renderCurrentSheet();
@@ -2476,6 +2647,174 @@ async function sharePlay() {
   }
 }
 
+function saveContacts() {
+  localStorage.setItem("mdl.contacts", JSON.stringify(state.contacts || []));
+}
+
+async function notifyContactsZAPI(songId) {
+  const contacts = state.contacts || [];
+  if (!contacts.length) return;
+
+  const song = findSong(songId);
+  if (!song) return;
+
+  const playEntry = state.play.find((e) => e.id === songId);
+  const key = playEntry?.key || song.key || "Tom não definido";
+  const appUrl = window.location.origin;
+
+  const message =
+    `🎵 *${song.title}*\n` +
+    `Artista: ${song.artist || "Desconhecido"}\n` +
+    `Tom: *${key}*\n\n` +
+    `Adicionada ao Play do ensaio! 🎸\n` +
+    `👉 Acesse a cifra: ${appUrl}`;
+
+  let enviados = 0;
+  let falhas = 0;
+
+  for (const contact of contacts) {
+    try {
+      const phone = contact.phone.replace(/\D/g, "");
+
+      const response = await fetch("/api/notify-whatsapp", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ phone, message }),
+      });
+
+      if (response.ok) {
+        enviados++;
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.warn(`Falha ao notificar ${contact.name}:`, err);
+        falhas++;
+      }
+    } catch (e) {
+      console.warn(`Erro ao notificar ${contact.name}:`, e);
+      falhas++;
+    }
+  }
+
+  if (enviados > 0 && falhas === 0) {
+    toast(`✓ ${enviados} músico${enviados > 1 ? "s" : ""} notificado${enviados > 1 ? "s" : ""} pelo WhatsApp`);
+  } else if (enviados > 0 && falhas > 0) {
+    toast(`✓ ${enviados} notificado${enviados > 1 ? "s" : ""}, ${falhas} com falha`);
+  } else {
+    toast("Não foi possível notificar - verifique a conexão com Z-API");
+  }
+}
+
+function openContactsModal() {
+  if (!isLeader()) return requireLeader();
+
+  let modal = document.getElementById("contactsModal");
+  if (!modal) {
+    modal = document.createElement("section");
+    modal.id = "contactsModal";
+    modal.className = "account-modal";
+    modal.setAttribute("aria-labelledby", "contactsTitle");
+    modal.innerHTML = `
+      <button class="account-backdrop" type="button" data-action="close-contacts" aria-label="Fechar contatos"></button>
+      <div class="account-card" style="max-width:480px">
+        <div class="account-head">
+          <div>
+            <span>Líder</span>
+            <h2 id="contactsTitle">Contatos do ministério</h2>
+            <p>Receberão mensagem automática no WhatsApp ao adicionar músicas ao ensaio</p>
+          </div>
+          <button type="button" data-action="close-contacts" aria-label="Fechar">&times;</button>
+        </div>
+
+        <div id="contactsList" style="margin-bottom:1rem"></div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:1rem;border-top:1px solid var(--border)">
+          <strong style="font-size:14px">Adicionar contato</strong>
+          <input id="contactNameInput" type="text" placeholder="Nome (ex: João Violão)" maxlength="60">
+          <input id="contactPhoneInput" type="tel" placeholder="WhatsApp com DDI (ex: 5521999990000)" maxlength="20">
+          <small style="color:var(--color-text-secondary);font-size:12px">
+            DDI do Brasil = 55 · DDD + número. Exemplo: 5521998887766
+          </small>
+          <button type="button" data-action="add-contact" style="margin-top:4px">Adicionar contato</button>
+        </div>
+
+        <p class="account-status" id="contactsStatus" aria-live="polite"></p>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  renderContactsList();
+  modal.hidden = false;
+  modal.removeAttribute("hidden");
+}
+
+function closeContactsModal() {
+  const modal = document.getElementById("contactsModal");
+  if (modal) modal.hidden = true;
+}
+
+function renderContactsList() {
+  const list = document.getElementById("contactsList");
+  if (!list) return;
+
+  const contacts = state.contacts || [];
+
+  if (!contacts.length) {
+    list.innerHTML = `<p style="color:var(--color-text-secondary);font-size:13px;padding:4px 0">Nenhum contato cadastrado ainda.</p>`;
+    return;
+  }
+
+  list.innerHTML = contacts.map((c, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)">
+      <div>
+        <strong style="font-size:14px">${escapeHtml(c.name)}</strong>
+        <small style="display:block;color:var(--color-text-secondary);font-size:12px">+${escapeHtml(c.phone)}</small>
+      </div>
+      <button type="button" data-action="remove-contact" data-index="${i}"
+        style="font-size:12px;padding:4px 12px;color:var(--color-text-danger)">Remover</button>
+    </div>
+  `).join("");
+}
+
+function addContact() {
+  const nameInput = document.getElementById("contactNameInput");
+  const phoneInput = document.getElementById("contactPhoneInput");
+  const status = document.getElementById("contactsStatus");
+
+  const name = nameInput?.value.trim();
+  const phone = phoneInput?.value.replace(/\D/g, "").trim();
+
+  if (!name) {
+    if (status) status.textContent = "Digite o nome do contato";
+    return;
+  }
+  if (!phone || phone.length < 12) {
+    if (status) status.textContent = "Digite o número com DDI (ex: 5521999990000 - 13 dígitos)";
+    return;
+  }
+
+  if (!state.contacts) state.contacts = [];
+  state.contacts.push({ name, phone });
+  saveContacts();
+  renderContactsList();
+
+  if (nameInput) nameInput.value = "";
+  if (phoneInput) phoneInput.value = "";
+  if (status) {
+    status.textContent = `✓ ${name} adicionado!`;
+    setTimeout(() => { status.textContent = ""; }, 2500);
+  }
+}
+
+function removeContact(index) {
+  if (!state.contacts) return;
+  const removed = state.contacts[index];
+  state.contacts.splice(index, 1);
+  saveContacts();
+  renderContactsList();
+  if (removed) toast(`${removed.name} removido dos contatos`);
+}
+
 function togglePlayEditing() {
   if (!isLeader()) return requireLeader();
   state.playEditing = !state.playEditing;
@@ -2739,6 +3078,71 @@ async function adminRefresh() {
     setTimeout(refreshLibrary, 1600);
   } catch {
     toast("N\u00E3o foi poss\u00EDvel atualizar");
+  }
+}
+
+function setAdminBackupStatus(message = "") {
+  if (dom.adminBackupStatus) dom.adminBackupStatus.textContent = message;
+}
+
+async function downloadAdminBackup() {
+  if (!state.auth?.token) return toast("Entre como lider para continuar");
+  setAdminBackupStatus("Preparando backup...");
+  try {
+    const response = await fetch("/api/admin/backup", {
+      headers: authHeaders()
+    });
+    if (!response.ok) throw new Error("backup-download-failed");
+    const blob = await response.blob();
+    const disposition = response.headers.get("content-disposition") || "";
+    const match = disposition.match(/filename="([^"]+)"/i);
+    const fileName = match?.[1] || `backup-acervo-mdl-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    setAdminBackupStatus("Backup baixado com sucesso.");
+    toast("Backup salvo");
+  } catch {
+    setAdminBackupStatus("Nao foi possivel gerar o backup.");
+    toast("Falha ao gerar backup");
+  }
+}
+
+function chooseAdminBackupRestore() {
+  if (!dom.backupRestoreInput) return;
+  dom.backupRestoreInput.value = "";
+  dom.backupRestoreInput.click();
+}
+
+async function handleAdminBackupRestoreSelected(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+  setAdminBackupStatus(`Lendo ${file.name}...`);
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    setAdminBackupStatus("Restaurando backup...");
+    const response = await fetch("/api/admin/restore-backup", {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "backup-restore-failed");
+    await refreshLibrary();
+    const restored = data.restored || {};
+    setAdminBackupStatus(`Backup restaurado: ${restored.songs || 0} cifras, ${restored.chords || 0} acordes e ${restored.thumbs || 0} thumbs.`);
+    toast("Backup restaurado");
+  } catch {
+    setAdminBackupStatus("Nao foi possivel restaurar o backup.");
+    toast("Falha ao restaurar backup");
+  } finally {
+    if (event.target) event.target.value = "";
   }
 }
 

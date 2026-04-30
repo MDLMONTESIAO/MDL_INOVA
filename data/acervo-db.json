@@ -1,8 +1,8 @@
 {
   "name": "Acervo Musical MDL Inova",
-  "generatedAt": "2026-04-29T21:46:36.795Z",
-  "artistThumbsUpdatedAt": "2026-04-29T21:43:53.115Z",
-  "totalSongs": 6234,
+  "generatedAt": "2026-04-30T23:22:38.414Z",
+  "artistThumbsUpdatedAt": null,
+  "totalSongs": 6232,
   "totalArtists": 63,
   "artists": [
     "3 Palavrinhas",
@@ -47054,41 +47054,17 @@
       "artistThumb": "/assets/artists/kemilly-santos.jpg"
     },
     {
-      "id": "kherem-carvalho-confio-em-ti-312c3d",
-      "title": "Confio Em Ti",
+      "id": "kherem-carvalho-do-zero-003ceed7ca",
+      "title": "Do zero",
       "artist": "Kherem Carvalho",
       "collection": "cifras_multi",
       "fileType": "html",
-      "key": "",
+      "key": "D",
       "youtubeUrl": "",
-      "updatedAt": "2026-04-29T21:46:01.752Z",
-      "apiUrl": "/api/songs/kherem-carvalho-confio-em-ti-312c3d",
-      "offlineKey": "mdl-song-kherem-carvalho-confio-em-ti-312c3d"
-    },
-    {
-      "id": "kherem-carvalho-confio-em-ti",
-      "title": "Do Zero",
-      "artist": "Kherem Carvalho",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T21:44:59.435Z",
-      "apiUrl": "/api/songs/kherem-carvalho-confio-em-ti",
-      "offlineKey": "mdl-song-kherem-carvalho-confio-em-ti",
+      "updatedAt": "2026-04-29T23:37:35.996Z",
+      "apiUrl": "/api/songs/kherem-carvalho-do-zero-003ceed7ca",
+      "offlineKey": "mdl-song-kherem-carvalho-do-zero-003ceed7ca",
       "artistThumb": "/artist-thumbs/kherem-carvalho.png?v=1777499033113"
-    },
-    {
-      "id": "kherem-carvalho-pelos-seculos-dos-seculos",
-      "title": "Pelos Séculos Dos Séculos",
-      "artist": "Kherem Carvalho",
-      "collection": "cifras_multi",
-      "fileType": "html",
-      "key": "",
-      "youtubeUrl": "",
-      "updatedAt": "2026-04-29T21:46:36.768Z",
-      "apiUrl": "/api/songs/kherem-carvalho-pelos-seculos-dos-seculos",
-      "offlineKey": "mdl-song-kherem-carvalho-pelos-seculos-dos-seculos"
     },
     {
       "id": "laura-souguellis-a-graca-que-ele-da-868221bae7",

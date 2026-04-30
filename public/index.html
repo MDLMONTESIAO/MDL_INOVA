@@ -361,6 +361,7 @@
           <div class="worship-actions">
             <button type="button" data-action="start-service">Iniciar</button>
             <button type="button" data-action="share-play">Compart.</button>
+            <button type="button" data-action="manage-contacts">Contatos</button>
             <button type="button" data-action="toggle-edit-play" id="editPlayButton">Editar</button>
           </div>
         </header>
@@ -405,6 +406,7 @@
         <div class="reader-tools">
           <button type="button" data-action="transpose-down">-1</button>
           <button type="button" data-action="reset-tone" id="toneButton">Tom</button>
+          <button type="button" data-action="detect-voice-tone" id="voiceToneButton">🎤 Meu Tom</button>
           <button type="button" data-action="transpose-up">+1</button>
           <button type="button" data-action="toggle-singer-mode" id="singerModeButton" aria-pressed="false">Cantor</button>
           <button class="instrument-toggle" type="button" data-action="toggle-chord-instrument" id="chordInstrumentButton" aria-pressed="false" title="Alternar desenho do acorde entre violão e teclado"><span>🎸</span><strong>Violão</strong></button>
@@ -548,6 +550,12 @@
             Atualizar acervo
           </button>
 
+          <div class="admin-actions-row">
+            <button class="admin-refresh secondary" type="button" data-action="admin-backup-download">Fazer backup</button>
+            <button class="admin-refresh secondary" type="button" data-action="admin-backup-restore">Restaurar backup</button>
+          </div>
+          <p class="dev-status" id="adminBackupStatus" aria-live="polite"></p>
+
           <div class="admin-metrics">
             <div><strong id="adminSongCount">0</strong><span>músicas ativas</span></div>
             <div><strong id="adminArtistCount">0</strong><span>pastas/artistas</span></div>
@@ -608,6 +616,7 @@
 
   <input id="localCoverInput" type="file" accept="image/*" hidden>
   <input id="artistThumbInput" type="file" accept="image/*" hidden>
+  <input id="backupRestoreInput" type="file" accept="application/json,.json" hidden>
   <input id="localAudioInput" type="file" accept="audio/mpeg,audio/mp3,audio/*" hidden>
   <input id="accountAvatarInput" type="file" accept="image/*" hidden>
 

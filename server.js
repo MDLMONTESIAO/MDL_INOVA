@@ -1119,6 +1119,116 @@ function addCatalogSong(newSong) {
     writeJsonIfChanged(filePath, normalizedCatalog);
   }
 }
+function upsertCatalogSongs(songRecords) {
+  const sourceCatalogPath = getCatalogDbPath();
+  const sourceCatalog = fs.existsSync(sourceCatalogPath) ? safeJsonParse(fs.readFileSync(sourceCatalogPath, "utf8"), null) : null;
+  const catalog = sourceCatalog && typeof sourceCatalog === "object" ? sourceCatalog : { name: "Acervo Musical", songs: [] };
+  const currentSongs = Array.isArray(catalog.songs) ? catalog.songs.slice() : [];
+  const nextSongsById = new Map(
+    currentSongs
+      .map(normalizeCatalogSong)
+      .filter(Boolean)
+      .map((song) => [song.id, song])
+  );
+  (songRecords || []).forEach((record) => {
+    const normalized = normalizeCatalogSong(record);
+    if (normalized?.id) nextSongsById.set(normalized.id, normalized);
+  });
+  const normalizedCatalog = normalizeCatalogData({
+    ...catalog,
+    generatedAt: new Date().toISOString(),
+    songs: Array.from(nextSongsById.values())
+  });
+  for (const filePath of getCatalogWritablePaths()) {
+    writeJsonIfChanged(filePath, normalizedCatalog);
+  }
+}
+function listBackupSongRecords() {
+  const files = fs.existsSync(RUNTIME_SONGS_DIR)
+    ? fs.readdirSync(RUNTIME_SONGS_DIR).filter((name) => name.endsWith(".json"))
+    : [];
+  return files
+    .map((fileName) => {
+      const raw = safeJsonParse(fs.readFileSync(path.join(RUNTIME_SONGS_DIR, fileName), "utf8"), null);
+      return normalizeSongRecordData(raw);
+    })
+    .filter(Boolean);
+}
+function listBackupThumbFiles() {
+  const fileMap = new Map();
+  for (const baseDir of ARTIST_THUMBS_SEARCH_DIRS) {
+    if (!fs.existsSync(baseDir)) continue;
+    for (const fileName of fs.readdirSync(baseDir)) {
+      if (!/^[a-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/i.test(fileName) || fileMap.has(fileName)) continue;
+      const fullPath = path.join(baseDir, fileName);
+      if (!fs.statSync(fullPath).isFile()) continue;
+      fileMap.set(fileName, {
+        fileName,
+        mime: MIME_TYPES[path.extname(fileName).toLowerCase()] || "application/octet-stream",
+        data: fs.readFileSync(fullPath).toString("base64")
+      });
+    }
+  }
+  return Array.from(fileMap.values()).sort((left, right) => left.fileName.localeCompare(right.fileName, "pt-BR"));
+}
+function createAdminBackupPayload() {
+  return {
+    kind: "mdl-custom-backup",
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    songs: listBackupSongRecords(),
+    customChords: readCustomChords(),
+    artistThumbs: readArtistThumbs(),
+    thumbFiles: listBackupThumbFiles()
+  };
+}
+function restoreAdminBackupPayload(payload) {
+  const backup = payload && typeof payload === "object" ? payload : null;
+  if (!backup || backup.kind !== "mdl-custom-backup") {
+    const error = new Error("invalid-backup");
+    error.code = "invalid-backup";
+    throw error;
+  }
+  const songRecords = Array.isArray(backup.songs)
+    ? backup.songs.map(normalizeSongRecordData).filter(Boolean)
+    : [];
+  const customChords = backup.customChords && typeof backup.customChords === "object" && !Array.isArray(backup.customChords)
+    ? Object.fromEntries(
+        Object.entries(backup.customChords).map(([name, shape]) => [String(name || "").trim(), normalizeChordShapePayload(shape)]).filter(([name]) => Boolean(name))
+      )
+    : {};
+  const artistThumbs = normalizeArtistThumbs(backup.artistThumbs);
+  const thumbFiles = Array.isArray(backup.thumbFiles) ? backup.thumbFiles : [];
+
+  fs.mkdirSync(RUNTIME_SONGS_DIR, { recursive: true });
+  songRecords.forEach((song) => {
+    const songPath = getWritableSongPath(song.id);
+    if (songPath) fs.writeFileSync(songPath, JSON.stringify(song, null, 2), "utf8");
+  });
+  if (songRecords.length) upsertCatalogSongs(songRecords);
+
+  writeCustomChords(customChords);
+  writeArtistThumbs(artistThumbs);
+  fs.mkdirSync(ARTIST_THUMBS_DIR, { recursive: true });
+  thumbFiles.forEach((entry) => {
+    const fileName = String(entry?.fileName || "").trim();
+    const mime = String(entry?.mime || "").trim().toLowerCase();
+    const data = String(entry?.data || "");
+    if (!/^[a-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/i.test(fileName) || !data) return;
+    const buffer = Buffer.from(data, "base64");
+    if (!buffer.length || !isValidImageBuffer(mime, buffer)) return;
+    fs.writeFileSync(path.join(ARTIST_THUMBS_DIR, fileName), buffer);
+  });
+  Object.entries(artistThumbs).forEach(([artist, urlPath]) => {
+    syncArtistThumbToCatalogFiles(artist, urlPath);
+  });
+  return {
+    songs: songRecords.length,
+    chords: Object.keys(customChords).length,
+    thumbs: Object.keys(artistThumbs).length,
+    thumbFiles: thumbFiles.length
+  };
+}
 function readCustomChords() { const source = readFirstExistingJson([CUSTOM_CHORDS_PATH, PREFERRED_CUSTOM_CHORDS_PATH], {}); return source && typeof source === "object" && !Array.isArray(source) ? source : {}; }
 function writeCustomChords(chords) { fs.mkdirSync(path.dirname(CUSTOM_CHORDS_PATH), { recursive: true }); fs.writeFileSync(CUSTOM_CHORDS_PATH, JSON.stringify(chords, null, 2), "utf8"); }
 function normalizeChordShapePayload(input) { const shape = input && typeof input === "object" ? input : {}; const frets = Array.isArray(shape.frets) ? shape.frets.slice(0, 6).map((value) => { if (value === "x" || value === "X") return "x"; const number = Number(value); return Number.isInteger(number) && number >= 0 && number <= 24 ? number : "x"; }) : ["x", "x", "x", "x", "x", "x"]; while (frets.length < 6) frets.push("x"); const baseFret = Math.max(1, Math.min(15, Number(shape.baseFret) || 1)); const barres = Array.isArray(shape.barres) ? shape.barres.map((barre) => ({ fret: Math.max(1, Math.min(24, Number(barre.fret) || baseFret)), fromString: Math.max(0, Math.min(5, Number(barre.fromString) || 0)), toString: Math.max(0, Math.min(5, Number(barre.toString) || 5)) })) : []; return { frets, baseFret, barres, label: String(shape.label || "Forma personalizada").slice(0, 80), notes: Array.isArray(shape.notes) ? shape.notes.map((note) => String(note).trim()).filter(Boolean).slice(0, 12) : [] }; }
@@ -1130,7 +1240,21 @@ const server = http.createServer(async (req, res) => {
     try { const body = await parseJsonBody(req); const deviceId = getRequestDeviceId(req, body) || "dev"; if (String(body.password || "") !== DEV_PASSWORD) return sendJson(res, 403, { ok: false, error: "invalid-dev-password" }); const store = ensureAuthStore(); return sendJson(res, 200, { ok: true, role: "developer", token: signDevToken(store.secret, deviceId) }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); }
   }
   if (url.pathname === "/api/dev/chords" && req.method === "GET") { if (!requireDev(req, res)) return; return sendJson(res, 200, { ok: true, chords: readCustomChords() }); }
-  if (url.pathname === "/api/dev/save-chord" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req); const name = repairPossibleMojibake(body.name || "").trim().replace(/\s+/g, "").slice(0, 40); if (!/^[A-G](?:#|b)?[0-9A-Za-zº°+\-#b()]*?(?:\/[A-G](?:#|b)?)?$/.test(name)) return sendJson(res, 400, { ok: false, error: "invalid-chord-name" }); const chords = readCustomChords(); chords[name] = normalizeChordShapePayload(body.shape); writeCustomChords(chords); return sendJson(res, 200, { ok: true, name, shape: chords[name] }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
+  if (url.pathname === "/api/dev/save-chord" && req.method === "POST") {
+    if (!requireDev(req, res)) return;
+    try {
+      const body = await parseJsonBody(req);
+      const name = repairPossibleMojibake(body.name || "").trim().replace(/\s+/g, "").slice(0, 40);
+      const chordNamePattern = /^[A-G](?:#|b)?[0-9A-Za-zº°+\-#b()]*?(?:\/(?:[A-G](?:#|b)?|[0-9A-Za-zº°+\-#b()]+))?$/;
+      if (!chordNamePattern.test(name)) return sendJson(res, 400, { ok: false, error: "invalid-chord-name" });
+      const chords = readCustomChords();
+      chords[name] = normalizeChordShapePayload(body.shape);
+      writeCustomChords(chords);
+      return sendJson(res, 200, { ok: true, name, shape: chords[name] });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
+    }
+  }
   if (url.pathname === "/api/dev/create-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req, 3 * 1024 * 1024); const created = createCatalogSongRecord(body); const songPath = getWritableSongPath(created.id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(created, null, 2), "utf8"); addCatalogSong(created); return sendJson(res, 200, { ok: true, song: created }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
   if (url.pathname === "/api/dev/save-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req, 3 * 1024 * 1024); const id = String(body.id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!id) return sendJson(res, 400, { ok: false, error: "invalid-song-id" }); const current = readSongRecord(id); if (!current) return sendJson(res, 404, { ok: false, error: "song-not-found" }); saveSongVersion(id, current); const updated = normalizeSongRecordData({ ...current, title: repairPossibleMojibake(body.title || current.title), artist: repairPossibleMojibake(body.artist || current.artist), collection: repairPossibleMojibake(body.collection || current.collection), key: body.key == null ? current.key : repairPossibleMojibake(body.key), html: repairPossibleMojibake(body.html || ""), youtubeUrl: sanitizeYoutubeUrl(body.youtubeUrl || body.youtube_url || current.youtubeUrl || ""), updatedAt: new Date().toISOString() }); const songPath = getWritableSongPath(id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(updated, null, 2), "utf8"); updateCatalogSongMetadata(updated); return sendJson(res, 200, { ok: true, song: updated }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
   if (url.pathname === "/api/dev/restore-song" && req.method === "POST") { if (!requireDev(req, res)) return; try { const body = await parseJsonBody(req); const id = String(body.id || "").replace(/[^a-zA-Z0-9_-]/g, ""); if (!id) return sendJson(res, 400, { ok: false, error: "invalid-song-id" }); const previous = getLatestSongVersion(id); if (!previous) return sendJson(res, 404, { ok: false, error: "version-not-found" }); const current = readSongRecord(id); if (current) saveSongVersion(id, current); const restored = normalizeSongRecordData({ ...previous, updatedAt: new Date().toISOString() }); const songPath = getWritableSongPath(id); fs.mkdirSync(path.dirname(songPath), { recursive: true }); fs.writeFileSync(songPath, JSON.stringify(restored, null, 2), "utf8"); updateCatalogSongMetadata(restored); return sendJson(res, 200, { ok: true, song: restored }); } catch (error) { return sendJson(res, 400, { ok: false, error: error.code || error.message }); } }
@@ -1392,6 +1516,38 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname === "/api/admin/backup" && req.method === "GET") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+    if (session.user.role !== "leader") return sendJson(res, 403, { ok: false, error: "leader-only" });
+    try {
+      const backup = createAdminBackupPayload();
+      const fileName = `backup-acervo-mdl-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+      const payload = JSON.stringify(backup, null, 2);
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Cache-Control": "no-store"
+      });
+      return res.end(payload);
+    } catch (error) {
+      return sendJson(res, 500, { ok: false, error: error.code || error.message });
+    }
+  }
+
+  if (url.pathname === "/api/admin/restore-backup" && req.method === "POST") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+    if (session.user.role !== "leader") return sendJson(res, 403, { ok: false, error: "leader-only" });
+    try {
+      const body = await parseJsonBody(req, 30 * 1024 * 1024);
+      const summary = restoreAdminBackupPayload(body);
+      return sendJson(res, 200, { ok: true, restored: summary });
+    } catch (error) {
+      return sendJson(res, 400, { ok: false, error: error.code || error.message });
+    }
+  }
+
   if (url.pathname === "/api/play" && req.method === "GET") {
     const session = verifyToken(req);
     if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
@@ -1527,6 +1683,42 @@ const server = http.createServer(async (req, res) => {
       res.end(data);
     });
     return;
+  }
+
+  if (url.pathname === "/api/notify-whatsapp" && req.method === "POST") {
+    const session = verifyToken(req);
+    if (!session) return sendJson(res, 401, { ok: false, error: "unauthorized" });
+    if (session.user.role !== "leader") return sendJson(res, 403, { ok: false, error: "leader-only" });
+
+    try {
+      const body = await parseJsonBody(req);
+      const { phone, message } = body;
+
+      if (!phone || !message) {
+        return sendJson(res, 400, { ok: false, error: "phone-and-message-required" });
+      }
+
+      const zapiUrl = "https://api.z-api.io/instances/3F271A65BBC9D2EC64C6AA151284BCC4/token/SEU_NOVO_TOKEN_AQUI/send-text";
+
+      const zapiRes = await fetch(zapiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, message }),
+      });
+
+      const zapiData = await zapiRes.json().catch(() => ({}));
+
+      if (!zapiRes.ok) {
+        console.warn("[Z-API] Falha ao enviar para", phone, zapiData);
+        return sendJson(res, 502, { ok: false, error: "zapi-error", detail: zapiData });
+      }
+
+      return sendJson(res, 200, { ok: true });
+
+    } catch (error) {
+      console.error("[Z-API] Erro inesperado:", error.message);
+      return sendJson(res, 500, { ok: false, error: error.message });
+    }
   }
 
   const filePath = safeStaticPath(req.url || "/");
