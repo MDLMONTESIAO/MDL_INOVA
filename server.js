@@ -54,6 +54,7 @@ const SMTP_PASS = String(process.env.SMTP_PASS || "");
 const SMTP_FROM = String(process.env.SMTP_FROM || SMTP_USER || "").trim();
 const SMTP_HELO = String(process.env.SMTP_HELO || "mdl-monte-siao.local").trim();
 const DEV_PASSWORD = String(process.env.DEV_PASSWORD || "Salmo92");
+const ZAPI_URL = String(process.env.ZAPI_URL || "").trim();
 const DEV_TOKEN_TTL_MS = 1000 * 60 * 60 * 8;
 const AUTH_USERS = {
   lider: { label: "Lider", role: "leader", defaultPassword: "1234", defaultName: "Lider" },
@@ -1698,9 +1699,11 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: "phone-and-message-required" });
       }
 
-      const zapiUrl = "https://api.z-api.io/instances/3F271A65BBC9D2EC64C6AA151284BCC4/token/SEU_NOVO_TOKEN_AQUI/send-text";
+      if (!ZAPI_URL) {
+        return sendJson(res, 503, { ok: false, error: "zapi-not-configured" });
+      }
 
-      const zapiRes = await fetch(zapiUrl, {
+      const zapiRes = await fetch(ZAPI_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, message }),
@@ -1813,7 +1816,13 @@ function watchCatalogFolders() {
       fs.watch(folder, { recursive: true }, () => scheduleImport("mudanca-no-acervo"));
       console.log(`Monitorando acervo: ${folder}`);
     } catch (error) {
-      console.warn(`Nao foi possivel monitorar ${folder}: ${error.message}`);
+      // fs.watch com recursive não é suportado no Linux. Tenta sem recursive como fallback.
+      try {
+        fs.watch(folder, () => scheduleImport("mudanca-no-acervo"));
+        console.log(`Monitorando acervo (sem recursão): ${folder}`);
+      } catch (fallbackError) {
+        console.warn(`Nao foi possivel monitorar ${folder}: ${fallbackError.message}`);
+      }
     }
   }
 }

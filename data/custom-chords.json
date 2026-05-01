@@ -66,5 +66,52 @@
       "G",
       "B"
     ]
+  },
+  "C7+": {
+    "frets": [
+      "x",
+      3,
+      5,
+      4,
+      5,
+      3
+    ],
+    "baseFret": 3,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": [
+      "C",
+      "E",
+      "G",
+      "B"
+    ]
+  },
+  "Dm7/9": {
+    "frets": [
+      "x",
+      5,
+      3,
+      5,
+      5,
+      "x"
+    ],
+    "baseFret": 3,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": []
+  },
+  "Em7/9": {
+    "frets": [
+      "x",
+      7,
+      5,
+      7,
+      7,
+      "x"
+    ],
+    "baseFret": 5,
+    "barres": [],
+    "label": "Forma personalizada",
+    "notes": []
   }
 }

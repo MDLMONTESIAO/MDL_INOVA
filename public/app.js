@@ -206,6 +206,8 @@ const state = {
   devChordFrets: ["x", 3, 2, 0, 1, 0],
   devChordBaseFret: 1,
   devChordBarres: [],
+  devChordVariations: [null, null],
+  devChordVariationIndex: 0,
   customChordShapes: {}
 };
 
@@ -654,14 +656,11 @@ async function loginSelectedUser() {
     await startAuthenticatedApp();
   } catch (error) {
     if (dom.loginStatus) dom.loginStatus.textContent = describeLoginError(error);
-    return;
-    if (dom.loginStatus) dom.loginStatus.textContent = "Usu\u00E1rio ou senha inv\u00E1lidos.";
   }
 }
 
 function syncAuthUi() {
   const user = state.auth?.user;
-  const config = user ? LOGIN_USERS[user.id] : null;
   document.body.classList.toggle("role-leader", isLeader());
   document.body.classList.toggle("role-musician", user?.role === "musician");
   document.body.classList.toggle("role-dev", state.devMode);
@@ -1710,8 +1709,9 @@ function refreshChordGuide() {
   dom.chordGuideName.textContent = guide.name;
   dom.chordGuideMeta.textContent = guide.meta;
   dom.chordGuideNotes.innerHTML = guide.notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("");
+  const editLabel = state.chordInstrument === "keyboard" ? "Editar notas" : "Editar desenho";
   dom.chordGuideHint.innerHTML = state.devMode
-    ? `${escapeHtml(guide.hint)} <button class="chord-dev-edit" type="button" data-action="dev-edit-active-chord">Editar desenho</button>`
+    ? `${escapeHtml(guide.hint)} <button class="chord-dev-edit" type="button" data-action="dev-edit-active-chord">${editLabel}</button>`
     : escapeHtml(guide.hint);
   dom.chordGuideDiagram.innerHTML = renderChordGuideDiagram(guide);
   dom.chordGuide.classList.add("open");
@@ -2160,8 +2160,8 @@ function showView(viewName) {
   if (view) view.classList.add("active");
 
   if (viewName === "dev") {
-    // O modo desenvolvedor deve manter o dashboard normal visÒ­vel e
-    // anexar os editores abaixo dele, como na tela premium de referÒªncia.
+    // O modo desenvolvedor deve manter o dashboard normal visível e
+    // anexar os editores abaixo dele, como na tela premium de referência.
     document.querySelector(`[data-view="dev"]`)?.classList.add("active");
     renderDevWorkspace();
   } else {
@@ -3045,12 +3045,19 @@ function getDevChordKeys() { return Object.keys(CHORD_SHAPE_LIBRARY).sort((a, b)
 function renderDevChordList() { if (!dom.devChordList || !state.devMode) return; const query = normalize(dom.devChordSearch?.value || ""); const chords = getDevChordKeys().filter((name) => !query || normalize(name).includes(query)).slice(0, 180); dom.devChordList.innerHTML = chords.length ? chords.map((name) => `<button type="button" data-action="dev-open-chord" data-chord="${escapeAttr(name)}" class="${name === state.devChordName ? "active" : ""}"><strong>${escapeHtml(name)}</strong><span>${escapeHtml(CHORD_SHAPE_LIBRARY[name]?.label || "Forma sugerida")}</span></button>`).join("") : `<div class="dev-empty">Nenhum acorde encontrado.</div>`; }
 function openDevChord(name) {
   const chordName = String(name || "C").trim() || "C";
-  const sourceShape = (state.customChordShapes && state.customChordShapes[chordName]) || CHORD_SHAPE_LIBRARY[chordName] || { frets: ["x", "x", "x", "x", "x", "x"], baseFret: 1 };
+  const sourceShape = (state.customChordShapes && state.customChordShapes[chordName]) || CHORD_SHAPE_LIBRARY[chordName] || { frets: ["x","x","x","x","x","x"], baseFret: 1 };
   const shape = normalizeChordShape(sourceShape);
   state.devChordName = chordName;
   state.devChordFrets = shape.frets.slice();
   state.devChordBaseFret = shape.baseFret || 1;
   state.devChordBarres = shape.barres || [];
+  state.devChordVariationIndex = 0;
+  // Carregar variações salvas se existirem
+  const savedVars = Array.isArray(sourceShape.variations) ? sourceShape.variations : [null, null];
+  state.devChordVariations = [
+    savedVars[0] ? normalizeChordShape(savedVars[0]) : null,
+    savedVars[1] ? normalizeChordShape(savedVars[1]) : null
+  ];
   if (dom.devChordNameInput) dom.devChordNameInput.value = chordName;
   if (dom.devChordBaseFret) dom.devChordBaseFret.value = String(state.devChordBaseFret);
   if (dom.devChordBarre) dom.devChordBarre.value = formatDevBarres(state.devChordBarres);
@@ -3061,13 +3068,267 @@ function openDevChord(name) {
   renderDevChordEditor();
   showDevTab("acordes");
 }
-function openDevChordFromGuide() { const currentChord = state.activeChordBase ? transposeChordText(state.activeChordBase, state.transposeOffset) : dom.chordGuideName?.textContent; closeChordGuide(); showView("dev"); openDevChord(currentChord || "C"); }
-function newDevChord() { state.devChordName = ""; state.devChordFrets = ["x", "x", "x", "x", "x", "x"]; state.devChordBaseFret = 1; state.devChordBarres = []; if (dom.devChordNameInput) dom.devChordNameInput.value = ""; if (dom.devChordNotes) dom.devChordNotes.value = ""; if (dom.devChordBaseFret) dom.devChordBaseFret.value = "1"; if (dom.devChordBarre) dom.devChordBarre.value = ""; renderDevChordEditor(); }
+function openDevChordFromGuide() {
+  const currentChord = state.activeChordBase
+    ? transposeChordText(state.activeChordBase, state.transposeOffset)
+    : dom.chordGuideName?.textContent;
+  closeChordGuide();
+  showView("dev");
+  openDevChord(currentChord || "C");
+  // Se estava no modo teclado, destacar campo de notas para edição imediata
+  if (state.chordInstrument === "keyboard") {
+    showDevTab("acordes");
+    setTimeout(() => dom.devChordNotes?.focus(), 80);
+  }
+}
+function newDevChord() {
+  state.devChordName = "";
+  state.devChordFrets = ["x","x","x","x","x","x"];
+  state.devChordBaseFret = 1;
+  state.devChordBarres = [];
+  state.devChordVariations = [null, null];
+  state.devChordVariationIndex = 0;
+  if (dom.devChordNameInput) dom.devChordNameInput.value = "";
+  if (dom.devChordNotes) dom.devChordNotes.value = "";
+  if (dom.devChordBaseFret) dom.devChordBaseFret.value = "1";
+  if (dom.devChordBarre) dom.devChordBarre.value = "";
+  renderDevChordEditor();
+}
 function clearDevChord() { state.devChordFrets = ["x", "x", "x", "x", "x", "x"]; state.devChordBarres = []; if (dom.devChordBarre) dom.devChordBarre.value = ""; renderDevChordEditor(); }
 function syncDevChordFromInputs() { state.devChordName = String(dom.devChordNameInput?.value || "").trim(); state.devChordBaseFret = Math.max(1, Math.min(15, Number(dom.devChordBaseFret?.value || 1))); state.devChordBarres = parseDevBarres(dom.devChordBarre?.value || ""); renderDevChordPreview(); }
-function renderDevChordEditor() { if (!dom.devChordGrid || !state.devMode) return; const rows = [1, 2, 3, 4, 5]; dom.devChordGrid.innerHTML = `<div class="dev-chord-grid-lines" aria-hidden="true">${STRING_LABELS.map((_, index) => `<span class="dev-string-line" style="--string:${index}"></span>`).join("")}${[0,1,2,3,4,5].map((fret) => `<span class="dev-fret-line" style="--fret:${fret}"></span>`).join("")}</div>${rows.map((row) => STRING_LABELS.map((_, stringIndex) => { const absoluteFret = state.devChordBaseFret + row - 1; const active = state.devChordFrets[stringIndex] === absoluteFret; return `<button type="button" class="dev-fret-dot${active ? " active" : ""}" style="--string:${stringIndex}; --fret:${row}" data-string="${stringIndex}" data-fret="${absoluteFret}" aria-label="Corda ${stringIndex + 1}, casa ${absoluteFret}"></button>`; }).join("")).join("")}`; dom.devChordGrid.querySelectorAll(".dev-fret-dot").forEach((button) => { button.addEventListener("click", () => { const stringIndex = Number(button.dataset.string); const fret = Number(button.dataset.fret); state.devChordFrets[stringIndex] = state.devChordFrets[stringIndex] === fret ? "x" : fret; renderDevChordEditor(); }); }); if (dom.devChordStringModes) { dom.devChordStringModes.innerHTML = STRING_LABELS.map((label, index) => { const value = state.devChordFrets[index]; return `<button type="button" data-string="${index}" class="${value === 0 ? "open" : value === "x" ? "muted" : ""}">${escapeHtml(label)}: ${value === 0 ? "O" : value === "x" ? "X" : value}</button>`; }).join(""); dom.devChordStringModes.querySelectorAll("button").forEach((button) => { button.addEventListener("click", () => { const index = Number(button.dataset.string); state.devChordFrets[index] = state.devChordFrets[index] === 0 ? "x" : 0; renderDevChordEditor(); }); }); } renderDevChordPreview(); }
-function renderDevChordPreview() { if (!dom.devChordPreviewDiagram) return; const name = String(dom.devChordNameInput?.value || state.devChordName || "Acorde").trim(); if (dom.devChordPreviewName) dom.devChordPreviewName.textContent = name || "Acorde"; const shape = normalizeChordShape({ frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada" }); const typedNotes = String(dom.devChordNotes?.value || "").split(/[;,]/).map((note) => note.trim()).filter(Boolean); const parsed = parseChordName(name); const notes = typedNotes.length ? typedNotes : (parsed ? buildChordNotes(parsed) : []); dom.devChordPreviewDiagram.innerHTML = renderChordGuideDiagram({ shape, notes }); }
-async function saveDevChord() { if (!isDevMode()) return toast("Ative o modo desenvolvedor"); const name = String(dom.devChordNameInput?.value || "").trim(); if (!name) return toast("Digite o nome do acorde"); syncDevChordFromInputs(); const shape = { frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada", notes: String(dom.devChordNotes?.value || "").split(",").map((note) => note.trim()).filter(Boolean) }; if (dom.devChordStatus) dom.devChordStatus.textContent = "Salvando acorde..."; try { const response = await fetch("/api/dev/save-chord", { method: "POST", headers: devHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ name, shape }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.ok) throw new Error(data.error || "save-chord-failed"); CHORD_SHAPE_LIBRARY[name] = shape; state.customChordShapes = { ...(state.customChordShapes || {}), [name]: shape }; state.devChordName = name; renderDevChordList(); renderDevChordPreview(); if (state.chordGuideOpen) refreshChordGuide(); if (dom.devChordStatus) dom.devChordStatus.textContent = "Acorde salvo. Clique em Conferir no sistema para testar."; toast("Acorde salvo"); } catch { if (dom.devChordStatus) dom.devChordStatus.textContent = "N\u00E3o foi poss\u00EDvel salvar."; toast("Falha ao salvar acorde"); } }
+function renderDevChordEditor() {
+  if (!dom.devChordGrid || !state.devMode) return;
+
+  const isKeyboard = state.chordInstrument === "keyboard";
+
+  // ── Abas de variação (Principal / Variação 1 / Variação 2) ──
+  let varTabs = document.getElementById("devChordVarTabs");
+  if (!varTabs) {
+    varTabs = document.createElement("div");
+    varTabs.id = "devChordVarTabs";
+    varTabs.className = "dev-chord-var-tabs";
+    dom.devChordGrid.parentElement?.insertBefore(varTabs, dom.devChordGrid);
+  }
+  varTabs.innerHTML = ["Principal", "Variação 1", "Variação 2"].map((label, i) => {
+    const hasData = i === 0 || state.devChordVariations[i - 1] !== null;
+    return `<button type="button" class="dev-chord-var-tab${state.devChordVariationIndex === i ? " active" : ""}${hasData && i > 0 ? " has-data" : ""}" data-var-index="${i}">${label}</button>`;
+  }).join("");
+  varTabs.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const next = Number(btn.dataset.varIndex);
+      // Salvar estado atual antes de trocar
+      saveCurrentVariationState();
+      state.devChordVariationIndex = next;
+      loadCurrentVariationState();
+      renderDevChordEditor();
+    });
+  });
+
+  // ── Botão de alternância violão / teclado ──
+  let toggleRow = document.getElementById("devChordModeToggle");
+  if (!toggleRow) {
+    toggleRow = document.createElement("div");
+    toggleRow.id = "devChordModeToggle";
+    toggleRow.className = "dev-chord-mode-toggle";
+    toggleRow.innerHTML = `
+      <button type="button" data-chord-mode="guitar">🎸 Violão</button>
+      <button type="button" data-chord-mode="keyboard">🎹 Teclado</button>`;
+    dom.devChordGrid.parentElement?.insertBefore(toggleRow, dom.devChordGrid);
+    toggleRow.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.chordInstrument = btn.dataset.chordMode;
+        localStorage.setItem("mdl.chordInstrument", state.chordInstrument);
+        syncChordInstrumentControls();
+        renderDevChordEditor();
+      });
+    });
+  }
+  toggleRow.querySelectorAll("button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.chordMode === state.chordInstrument);
+  });
+
+  // Mostrar/ocultar campos exclusivos de cada modo
+  document.querySelectorAll(".dev-chord-guitar-only").forEach((el) => { el.hidden = isKeyboard; });
+  document.querySelectorAll(".dev-chord-keyboard-only").forEach((el) => { el.hidden = !isKeyboard; });
+
+  if (isKeyboard) {
+    renderDevChordEditorKeyboard();
+  } else {
+    renderDevChordEditorGuitar();
+  }
+  renderDevChordPreview();
+}
+
+// Salva o estado da aba atual antes de trocar
+function saveCurrentVariationState() {
+  const i = state.devChordVariationIndex;
+  const shape = {
+    frets: state.devChordFrets.slice(),
+    baseFret: state.devChordBaseFret,
+    barres: state.devChordBarres.slice()
+  };
+  if (i === 0) {
+    // Principal — já está em state diretamente, não precisa salvar em variations
+  } else {
+    state.devChordVariations[i - 1] = shape;
+  }
+}
+
+// Carrega o estado da aba selecionada
+function loadCurrentVariationState() {
+  const i = state.devChordVariationIndex;
+  if (i === 0) {
+    // Principal: já está em state, só atualizar campos do form
+    if (dom.devChordBaseFret) dom.devChordBaseFret.value = String(state.devChordBaseFret);
+    if (dom.devChordBarre) dom.devChordBarre.value = formatDevBarres(state.devChordBarres);
+  } else {
+    const saved = state.devChordVariations[i - 1];
+    if (saved) {
+      state.devChordFrets = saved.frets.slice();
+      state.devChordBaseFret = saved.baseFret || 1;
+      state.devChordBarres = saved.barres || [];
+    } else {
+      // Nova variação em branco
+      state.devChordFrets = ["x","x","x","x","x","x"];
+      state.devChordBaseFret = 1;
+      state.devChordBarres = [];
+    }
+    if (dom.devChordBaseFret) dom.devChordBaseFret.value = String(state.devChordBaseFret);
+    if (dom.devChordBarre) dom.devChordBarre.value = formatDevBarres(state.devChordBarres);
+  }
+}
+
+function renderDevChordEditorGuitar() {
+  const rows = [1, 2, 3, 4, 5];
+  dom.devChordGrid.innerHTML = `<div class="dev-chord-grid-lines" aria-hidden="true">${STRING_LABELS.map((_, index) => `<span class="dev-string-line" style="--string:${index}"></span>`).join("")}${[0,1,2,3,4,5].map((fret) => `<span class="dev-fret-line" style="--fret:${fret}"></span>`).join("")}</div>${rows.map((row) => STRING_LABELS.map((_, stringIndex) => { const absoluteFret = state.devChordBaseFret + row - 1; const active = state.devChordFrets[stringIndex] === absoluteFret; return `<button type="button" class="dev-fret-dot${active ? " active" : ""}" style="--string:${stringIndex}; --fret:${row}" data-string="${stringIndex}" data-fret="${absoluteFret}" aria-label="Corda ${stringIndex + 1}, casa ${absoluteFret}"></button>`; }).join("")).join("")}`;
+  dom.devChordGrid.querySelectorAll(".dev-fret-dot").forEach((button) => {
+    button.addEventListener("click", () => {
+      const stringIndex = Number(button.dataset.string);
+      const fret = Number(button.dataset.fret);
+      state.devChordFrets[stringIndex] = state.devChordFrets[stringIndex] === fret ? "x" : fret;
+      renderDevChordEditor();
+    });
+  });
+  if (dom.devChordStringModes) {
+    dom.devChordStringModes.innerHTML = STRING_LABELS.map((label, index) => {
+      const value = state.devChordFrets[index];
+      return `<button type="button" data-string="${index}" class="${value === 0 ? "open" : value === "x" ? "muted" : ""}">${escapeHtml(label)}: ${value === 0 ? "O" : value === "x" ? "X" : value}</button>`;
+    }).join("");
+    dom.devChordStringModes.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.string);
+        state.devChordFrets[index] = state.devChordFrets[index] === 0 ? "x" : 0;
+        renderDevChordEditor();
+      });
+    });
+  }
+}
+
+function renderDevChordEditorKeyboard() {
+  const typedNotes = String(dom.devChordNotes?.value || "").split(/[,;]/).map((n) => n.trim()).filter(Boolean);
+  const activeSet = new Set(typedNotes.map((n) => NOTE_INDEX[n]).filter((i) => i !== undefined));
+
+  const ALL_NOTES = [
+    { note: "C", black: false }, { note: "C#", black: true },
+    { note: "D", black: false }, { note: "D#", black: true },
+    { note: "E", black: false },
+    { note: "F", black: false }, { note: "F#", black: true },
+    { note: "G", black: false }, { note: "G#", black: true },
+    { note: "A", black: false }, { note: "A#", black: true },
+    { note: "B", black: false }
+  ];
+
+  // Posição X de cada tecla preta: entre qual índice de branca ela fica
+  // C#=entre0-1, D#=entre1-2, F#=entre3-4, G#=entre4-5, A#=entre5-6
+  const blackPositions = { "C#": 0, "D#": 1, "F#": 3, "G#": 4, "A#": 5 };
+
+  const whiteKeys = ALL_NOTES.filter((k) => !k.black);
+  const blackKeys = ALL_NOTES.filter((k) => k.black);
+
+  const whiteHtml = whiteKeys.map((key) => {
+    const active = activeSet.has(NOTE_INDEX[key.note]);
+    return `<button type="button" class="dev-piano-key white${active ? " active" : ""}" data-note="${escapeAttr(key.note)}" aria-label="${escapeAttr(key.note)}" aria-pressed="${active}"><b>${escapeHtml(key.note)}</b></button>`;
+  }).join("");
+
+  const blackHtml = blackKeys.map((key) => {
+    const active = activeSet.has(NOTE_INDEX[key.note]);
+    const pos = blackPositions[key.note];
+    // Cada tecla branca ocupa 100/7 %. Tecla preta fica no centro da borda direita da branca anterior
+    const leftPct = ((pos + 1) / 7 * 100).toFixed(3);
+    return `<button type="button" class="dev-piano-key black${active ? " active" : ""}" style="left:${leftPct}%;transform:translateX(-50%);" data-note="${escapeAttr(key.note)}" aria-label="${escapeAttr(key.note)}" aria-pressed="${active}"><b>${escapeHtml(key.note)}</b></button>`;
+  }).join("");
+
+  dom.devChordGrid.innerHTML = `
+    <div class="dev-piano-editor" aria-label="Editor de teclado">
+      <div class="dev-piano-white-keys">${whiteHtml}</div>
+      <div class="dev-piano-black-keys">${blackHtml}</div>
+    </div>`;
+
+  if (dom.devChordStringModes) dom.devChordStringModes.innerHTML = "";
+
+  dom.devChordGrid.querySelectorAll(".dev-piano-key").forEach((button) => {
+    button.addEventListener("click", () => {
+      const note = button.dataset.note;
+      const current = String(dom.devChordNotes?.value || "").split(/[,;]/).map((n) => n.trim()).filter(Boolean);
+      const idx = current.indexOf(note);
+      if (idx >= 0) current.splice(idx, 1);
+      else current.push(note);
+      if (dom.devChordNotes) dom.devChordNotes.value = current.join(", ");
+      renderDevChordEditor();
+    });
+  });
+}
+function renderDevChordPreview() {
+  if (!dom.devChordPreviewDiagram) return;
+  const name = String(dom.devChordNameInput?.value || state.devChordName || "Acorde").trim();
+  if (dom.devChordPreviewName) dom.devChordPreviewName.textContent = name || "Acorde";
+  const shape = normalizeChordShape({ frets: state.devChordFrets, baseFret: state.devChordBaseFret, barres: state.devChordBarres, label: "Forma personalizada" });
+  const typedNotes = String(dom.devChordNotes?.value || "").split(/[;,]/).map((note) => note.trim()).filter(Boolean);
+  const parsed = parseChordName(name);
+  const notes = typedNotes.length ? typedNotes : (parsed ? buildChordNotes(parsed) : []);
+  // Força preview no instrumento ativo — teclado mostra piano, violão mostra diagrama
+  const savedInstrument = state.chordInstrument;
+  dom.devChordPreviewDiagram.innerHTML = renderChordGuideDiagram({ shape, notes, alternatives: [] });
+  state.chordInstrument = savedInstrument;
+}
+async function saveDevChord() {
+  if (!isDevMode()) return toast("Ative o modo desenvolvedor");
+  const name = String(dom.devChordNameInput?.value || "").trim();
+  if (!name) return toast("Digite o nome do acorde");
+  // Salvar estado da aba atual antes de persistir
+  saveCurrentVariationState();
+  syncDevChordFromInputs();
+  const notes = String(dom.devChordNotes?.value || "").split(",").map((note) => note.trim()).filter(Boolean);
+  const shape = {
+    frets: state.devChordFrets,
+    baseFret: state.devChordBaseFret,
+    barres: state.devChordBarres,
+    label: "Forma personalizada",
+    notes,
+    variations: state.devChordVariations.map((v) => v ? { frets: v.frets, baseFret: v.baseFret, barres: v.barres } : null)
+  };
+  if (dom.devChordStatus) dom.devChordStatus.textContent = "Salvando acorde...";
+  try {
+    const response = await fetch("/api/dev/save-chord", {
+      method: "POST",
+      headers: devHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ name, shape })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || "save-chord-failed");
+    CHORD_SHAPE_LIBRARY[name] = shape;
+    state.customChordShapes = { ...(state.customChordShapes || {}), [name]: shape };
+    state.devChordName = name;
+    renderDevChordList();
+    renderDevChordPreview();
+    if (state.chordGuideOpen) refreshChordGuide();
+    if (dom.devChordStatus) dom.devChordStatus.textContent = "Acorde salvo. Clique em Conferir no sistema para testar.";
+    toast("Acorde salvo");
+  } catch {
+    if (dom.devChordStatus) dom.devChordStatus.textContent = "Não foi possível salvar.";
+    toast("Falha ao salvar acorde");
+  }
+}
 function parseDevBarres(value) { return String(value || "").split(/[;,]/).map((item) => { const match = item.trim().match(/^(\d+)\s*:\s*(\d)\s*-\s*(\d)$/); if (!match) return null; return { fret: Number(match[1]), fromString: Number(match[2]), toString: Number(match[3]) }; }).filter(Boolean); }
 function formatDevBarres(barres) { return (barres || []).map((barre) => `${barre.fret}:${barre.fromString}-${barre.toString}`).join(", "); }
 
@@ -3150,7 +3411,7 @@ function updateStats() {
   const total = state.songs.length;
   const artists = new Set(state.songs.map((song) => song.artist)).size;
   const audioCount = Array.from(state.songMedia.values()).filter((media) => media.audioBlob).length;
-  const playProgress = state.play.length ? Math.min(100, Math.max(25, state.play.length * 25)) : 25;
+  const playProgress = state.play.length ? Math.min(100, Math.max(5, Math.round(state.play.length * 5))) : 0;
   dom.libraryStats.textContent = `${total} ${total === 1 ? "m\u00FAsica" : "m\u00FAsicas"} \u00B7 ${artists} ${artists === 1 ? "artista" : "artistas"}`;
   dom.favoriteStats.textContent = `${state.favorites.size} ${state.favorites.size === 1 ? "m\u00FAsica" : "m\u00FAsicas"}`;
   if (dom.playStats) dom.playStats.textContent = `${state.play.length} ${state.play.length === 1 ? "m\u00FAsica separada" : "m\u00FAsicas separadas"}`;
@@ -4035,6 +4296,7 @@ function buildChordGuide(chordName) {
   if (!parsed) return null;
 
   const shape = resolveChordShape(parsed);
+  const alternatives = resolveAlternativeShapes(parsed);
   const metaParts = [parsed.familyMeta.label];
   if (shape?.label) metaParts.push(shape.label);
   if (parsed.bass) metaParts.push(`baixo em ${parsed.bass}`);
@@ -4055,8 +4317,55 @@ function buildChordGuide(chordName) {
     meta: metaParts.join(" \u00B7 "),
     notes: buildChordNotes(parsed),
     shape,
+    alternatives,
     hint
   };
+}
+
+// Gera formas alternativas para o mesmo acorde (posicoes diferentes no braco)
+function resolveAlternativeShapes(parsed) {
+  if (!parsed || parsed.bass) return [];
+
+  // Variações customizadas salvas pelo desenvolvedor têm prioridade
+  const chordKey = `${parsed.root}${parsed.familyMeta.lookup}`;
+  const customSource = state.customChordShapes?.[parsed.name] || state.customChordShapes?.[chordKey]
+    || CHORD_SHAPE_LIBRARY[parsed.name] || CHORD_SHAPE_LIBRARY[chordKey];
+  if (Array.isArray(customSource?.variations)) {
+    const result = customSource.variations
+      .filter(Boolean)
+      .map((v, i) => normalizeChordShape(v, { approximate: false, handlesBass: true,
+        label: `Variação ${i + 1}` }));
+    if (result.length) return result.slice(0, 2);
+  }
+
+  // Fallback: formas móveis automáticas
+  const family = parsed.familyMeta.shapeFamily;
+  if (!family) return [];
+
+  const primaryShape = resolveChordShape(parsed);
+  const primarySig = primaryShape ? shapeSignature(primaryShape) : null;
+  const seen = new Set(primarySig ? [primarySig] : []);
+  const alternatives = [];
+
+  for (const anchor of ["lowE", "a"]) {
+    const model = MOVABLE_CHORD_SHAPES[family]?.[anchor];
+    if (!model) continue;
+    const rootFret = fretForRoot(parsed.root, OPEN_STRING_NOTE_INDEX[anchor]);
+    const frets = model.template.map((v) => v === "x" ? "x" : v + rootFret);
+    const shape = normalizeChordShape(
+      { frets, label: anchor === "lowE" ? "Posicao corda E" : "Posicao corda A",
+        baseFret: frets.some((v) => v === 0) ? 1 : Math.max(1, rootFret) },
+      { approximate: Boolean(parsed.familyMeta.approximate), handlesBass: true }
+    );
+    const sig = shapeSignature(shape);
+    if (!seen.has(sig)) { seen.add(sig); alternatives.push(shape); }
+  }
+  return alternatives.slice(0, 2);
+}
+
+// Gera uma assinatura compacta da forma para comparação
+function shapeSignature(shape) {
+  return shape.frets.map((f) => (f === "x" ? "x" : String(f))).join(",") + "@" + shape.baseFret;
 }
 
 function renderChordGuideDiagram(guide) {
@@ -4066,22 +4375,32 @@ function renderChordGuideDiagram(guide) {
     return `<div class="chord-layout-stack single-layout">${keyboard || `<div class="chord-guide-empty">Não foi possível montar o teclado desse acorde.</div>`}</div>`;
   }
 
-  const guitarDiagram = guide.shape ? `
-    <div class="chord-diagram-card">
-      <div class="chord-layout-label">Violão / guitarra</div>
-      <div class="chord-diagram-top">${renderChordMarkers(guide.shape.frets)}</div>
-      <div class="chord-diagram-body${guide.shape.baseFret === 1 ? " is-open" : ""}">
-        ${guide.shape.baseFret > 1 ? `<span class="chord-base-fret">${guide.shape.baseFret}</span>` : ""}
-        ${STRING_LABELS.map((_, index) => `<span class="chord-string-line" style="--string:${index};"></span>`).join("")}
-        ${[0, 1, 2, 3, 4, 5].map((fret) => `<span class="chord-fret-line${fret === 0 && guide.shape.baseFret === 1 ? " nut" : ""}" style="--fret:${fret};"></span>`).join("")}
-        ${renderChordBarres(guide.shape)}
-        ${renderChordDots(guide.shape)}
+  function buildGuitarCard(shape, labelOverride) {
+    if (!shape) return `<div class="chord-guide-empty">Diagrama ainda não disponível para esse tipo de acorde.</div>`;
+    const label = labelOverride || shape.label || "Violão / guitarra";
+    return `
+      <div class="chord-diagram-card">
+        <div class="chord-layout-label">${escapeHtml(label)}</div>
+        <div class="chord-diagram-top">${renderChordMarkers(shape.frets)}</div>
+        <div class="chord-diagram-body${shape.baseFret === 1 ? " is-open" : ""}">
+          ${shape.baseFret > 1 ? `<span class="chord-base-fret">${shape.baseFret}</span>` : ""}
+          ${STRING_LABELS.map((_, index) => `<span class="chord-string-line" style="--string:${index};"></span>`).join("")}
+          ${[0, 1, 2, 3, 4, 5].map((fret) => `<span class="chord-fret-line${fret === 0 && shape.baseFret === 1 ? " nut" : ""}" style="--fret:${fret};"></span>`).join("")}
+          ${renderChordBarres(shape)}
+          ${renderChordDots(shape)}
+        </div>
+        <div class="chord-string-labels">${STRING_LABELS.map((label) => `<span>${label}</span>`).join("")}</div>
       </div>
-      <div class="chord-string-labels">${STRING_LABELS.map((label) => `<span>${label}</span>`).join("")}</div>
-    </div>
-  ` : `<div class="chord-guide-empty">Diagrama ainda não disponível para esse tipo de acorde.</div>`;
+    `;
+  }
 
-  return `<div class="chord-layout-stack single-layout">${guitarDiagram}</div>`;
+  const primary = buildGuitarCard(guide.shape, "Principal");
+  const alts = Array.isArray(guide.alternatives) && guide.alternatives.length
+    ? guide.alternatives.map((alt) => buildGuitarCard(alt, alt.label || "Alternativa")).join("")
+    : "";
+
+  const hasAlts = alts.length > 0;
+  return `<div class="chord-layout-stack${hasAlts ? " has-alternatives" : " single-layout"}">${primary}${alts}</div>`;
 }
 function renderPianoKeyboard(notes = []) {
   const activeIndexes = new Set(notes.map((note) => NOTE_INDEX[note]).filter((index) => index !== undefined));
@@ -4371,15 +4690,6 @@ function transposeNote(note, semitones, preferFlats = note.includes("b")) {
   return preferFlats ? NOTE_FLAT[next] : NOTE_SHARP[next];
 }
 
-function inferKeyFromHtml(html) {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const firstChordNode = template.content.querySelector("i");
-  const text = firstChordNode ? firstChordNode.textContent : template.content.textContent;
-  const match = String(text || "").match(/\b([A-G](?:#|b)?)(?:[0-9A-Za-z\u00BA\u00B0+\-#b()]*)?(?:\/[A-G](?:#|b)?)?\b/);
-  return match ? match[1] : null;
-}
-
 function emptyState(text) {
   return `<div class="empty-state">${escapeHtml(text)}</div>`;
 }
@@ -4398,20 +4708,6 @@ function toast(text) {
   const node = document.createElement("div");
   node.className = "toast";
   node.textContent = text;
-  Object.assign(node.style, {
-    position: "fixed",
-    left: "50%",
-    bottom: "18px",
-    transform: "translateX(-50%)",
-    background: "#171615",
-    color: "#fff",
-    padding: "12px 16px",
-    borderRadius: "8px",
-    boxShadow: "0 12px 28px rgba(0,0,0,.28)",
-    fontSize: "13px",
-    fontWeight: "850",
-    zIndex: "50"
-  });
   document.body.appendChild(node);
   setTimeout(() => node.remove(), 1400);
 }

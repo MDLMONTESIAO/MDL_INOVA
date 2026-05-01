@@ -10,7 +10,7 @@
   <title>Plataforma Musical</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/assets/logo-inova.jpg">
-  <link rel="stylesheet" href="/styles.css?v=20260428-cache-refresh-1">
+  <link rel="stylesheet" href="/styles.css?v=20260501-cache-refresh-2">
   <script>
     (() => {
       const savedTheme = localStorage.getItem("mdl.theme");
@@ -19,7 +19,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="/artist-view-modes.css?v=20260428-cache-refresh-1">
+  <link rel="stylesheet" href="/artist-view-modes.css?v=20260501-cache-refresh-2">
 </head>
 <body>
   <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
@@ -516,9 +516,10 @@
                 <div class="dev-grid-2">
                   <label class="dev-field"><span>Nome do acorde</span><input id="devChordName" type="text" placeholder="C, Am, F#7..."></label>
                   <label class="dev-field"><span>Notas do acorde</span><input id="devChordNotes" type="text" placeholder="C, E, G"></label>
-                  <label class="dev-field"><span>Casa inicial</span><input id="devChordBaseFret" type="number" min="1" max="15" value="1"></label>
-                  <label class="dev-field"><span>Pestana</span><input id="devChordBarre" type="text" placeholder="Ex: 1:0-5"></label>
+                  <label class="dev-field dev-chord-guitar-only"><span>Casa inicial</span><input id="devChordBaseFret" type="number" min="1" max="15" value="1"></label>
+                  <label class="dev-field dev-chord-guitar-only"><span>Pestana</span><input id="devChordBarre" type="text" placeholder="Ex: 1:0-5"></label>
                 </div>
+                <p class="dev-chord-keyboard-only dev-chord-keyboard-hint" hidden>Clique nas teclas para ativar ou desativar as notas do acorde. Use o campo "Notas do acorde" para editar manualmente.</p>
                 <div class="dev-chord-editor-grid" id="devChordGrid" aria-label="Editor visual de acorde"></div>
                 <div class="dev-chord-string-modes" id="devChordStringModes"></div>
                 <div class="dev-actions-row"><button type="button" data-action="dev-new-chord">Novo</button><button type="button" data-action="dev-save-chord" class="primary">Salvar acorde</button><button type="button" data-action="dev-clear-chord">Limpar desenho</button></div>
@@ -704,8 +705,8 @@
     </form>
   </section>
 
-  <script src="/app.js?v=20260428-cache-refresh-1"></script>
+  <script src="/app.js?v=20260501-cache-refresh-2"></script>
 
-  <script src="/artist-view-modes.js?v=20260428-cache-refresh-1" defer></script>
+  <script src="/artist-view-modes.js?v=20260501-cache-refresh-2" defer></script>
 </body>
 </html>
